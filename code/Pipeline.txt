@@ -1,0 +1,10 @@
+###
+For simulation data
+###
+
+#### Get correlation vector
+Start from TRN/.pgen, .psam, .pvar data sets from Bert.
+Run run-gaws.R to get GWAS results.
+
+#### Get LD matrix
+
