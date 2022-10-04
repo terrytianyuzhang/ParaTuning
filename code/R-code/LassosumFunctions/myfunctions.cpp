@@ -426,6 +426,10 @@ List myrunElnet(arma::vec& lambda, double shrink, double gamma,
   arma::mat pred2(X2.n_rows, lambda.n_elem); pred2.zeros();
   arma::vec out(lambda.n_elem);
   arma::vec loss(lambda.n_elem);
+  //tianyu added these two to record training error for each population
+  //these quantities will be used in parameter tuning step
+  arma::vec trainerror1(lambda.n_elem);
+  arma::vec trainerror2(lambda.n_elem);
   arma::vec diag1(r1.n_elem); diag1.fill(1.0 - shrink);
   arma::vec diag2(r2.n_elem); diag2.fill(1.0 - shrink);
   // Rcout << "HIJ" << std::endl;
@@ -478,6 +482,8 @@ List myrunElnet(arma::vec& lambda, double shrink, double gamma,
     loss(i) = arma::as_scalar(gamma * arma::sum(arma::pow(yhat1, 2)) -
       gamma * 2.0 * arma::sum(x % r1) + (1-gamma) * (arma::sum(arma::pow(yhat2, 2))) - (1-gamma) * 2.0 * arma::sum(x % r2));
 
+    trainerror1(i) = arma::as_scalar(arma::sum(arma::pow(yhat1, 2)) - 2.0 * arma::sum(x % r1));
+    trainerror2(i) = arma::as_scalar(arma::sum(arma::pow(yhat2, 2)) - 2.0 * arma::sum(x % r2));
 
     fbeta(i) =
       arma::as_scalar(loss(i) + 2.0 * arma::sum(arma::abs(x)) * lambda(i) +
@@ -490,6 +496,8 @@ List myrunElnet(arma::vec& lambda, double shrink, double gamma,
                       Named("pred2") = pred2,
                       Named("loss") = loss, //without the penalty on regression coefficients
                       Named("fbeta") = fbeta, //inlcude the penalty
+                      Named("trainerror1") = trainerror1,
+                      Named("trainerror1") = trainerror1,
                       Named("sd1")= sd1,
                       Named("sd2")= sd2);
 }
