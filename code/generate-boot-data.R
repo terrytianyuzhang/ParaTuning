@@ -51,88 +51,93 @@ work.dir <- "/raid6/Ron/prs/data/bert_sample/"
 lasso.files=list.files(path=paste0(main.dir,"CombinedLassoSum/Tmp/"),pattern = ".Rdata",full.names = T)
 work.df=data.frame(trn.set=rep(c("CEU.TRN","YRI.TRN"),length(lasso.files)),trn.n=20000,lasso.file=rep(lasso.files,each=2))
 
-i.set <- 1
-lasso.file=work.df$lasso.file[i.set]
-trn.set=work.df$trn.set[i.set]
-trn.n=work.df$trn.n[i.set]
-
-####now we finally load the beta0
-load(lasso.file)
-beta=re.lasso$beta
-
-beta0 <- beta[,2]
-shrink <- re.lasso$shrink 
-######next step is generating some risk score using reference genotype
-######we can download these genotype from 1000 Genome Project
-######for the purpose of thee paper I will just use the reference panel 
-######from which the training samples are generated
-
-####I need existing code to correctly load the genotype data
-chr <- 20
-system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/YRI_reference_LDblocks/CHR/YRI-chr",chr, ".bed"),
-                            bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/YRI_reference_LDblocks/CHR/YRI-chr",chr, ".bim"),
-                            fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/YRI_reference_LDblocks/CHR/YRI-chr",chr, ".fam"))
-)
-gnt_map <- gnt$map
-# transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
-system.time(gnt<-2-as(gnt$genotypes,Class="numeric"))
-
-# center the columns
-system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
-# normalize the calls to the unit 1 norm
-system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
-# apply the proper shrinkage
-system.time(gnt<-gnt*sqrt(1-shrink))
-# calculate the pgs
-system.time(re.pgs<-gnt%*%beta0)
-
-#####now re.pgs is our preliminary estimate of the true risk score
-#####add some noise to construct Y
-
-#####we need to read figure out what is the original data noise level
-
-pheno <- fread(file = "/raid6/Ron/prs/data/bert_sample/YRI.TRN/YRI.TRN.psam")
-summary(as.factor(pheno$PHENO1))
-##the summary stat of phenotype deteremine how we calibrate the score into probability
-
-# > summary(as.factor(pheno$PHENO1))
-# 1    2 
-# 2000 2000 
-#####transform the PRS to a probability
-re.pgs.prob <- (re.pgs - min(re.pgs))/ (max(re.pgs) - min(re.pgs))
-
-
-#### SD of the noise variable
-sd <- sqrt(abs(re.pgs))
-
-### generate bootstrap Y
 B <- 10 ###B is the bootstrap repeats
-boot.Y <- matrix(0, nrow = length(re.pgs), ncol = B)
-for(i in 1:length(re.pgs)){
-  boot.Y[i,] <- rbinom(B, size = 1, prob = re.pgs.prob[i])
-}
-
-### calculate pairwise p value of correlation coefficient
-boot.cor <- matrix(0, nrow = NCOL(gnt), ncol = B)
-for(i in 1:B){
-  print(B)
-  for(j in 1:NCOL(gnt)){
-    boot.cor[j,i] <- cor(boot.Y[,i], gnt[,j])
+chr <- 20 #which chromosome did i use when training the model
+set.seed(2019)
+for(i.set in 1:2){
+    
+  lasso.file=work.df$lasso.file[i.set]
+  trn.set=work.df$trn.set[i.set]
+  trn.n=work.df$trn.n[i.set]
+  
+  anc <- gsub(".TRN", "", trn.set)
+  
+  ####now we load the beta0
+  load(lasso.file)
+  beta=re.lasso$beta
+  
+  beta0 <- beta[,2] #use the second smallest lambda
+  shrink <- re.lasso$shrink 
+  ######next step is generating some risk score using reference genotype
+  ######we can download these genotype from 1000 Genome Project
+  ######for the purpose of thee paper I will just use the reference panel 
+  ######from which the training samples are generated
+  
+  ####load genotype data without label
+  system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
+                              bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
+                              fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"))
+  )
+  gnt_map <- gnt$map
+  # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
+  system.time(gnt<-2-as(gnt$genotypes,Class="numeric"))
+  
+  # center the columns
+  system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
+  # normalize the calls to the unit 1 norm
+  system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
+  # apply the proper shrinkage
+  system.time(gnt<-gnt*sqrt(1-shrink))
+  # calculate the pgs
+  system.time(re.pgs<-gnt%*%beta0)
+  
+  #####now re.pgs is our preliminary estimate of the true risk score
+  #####add some noise to construct Y
+  
+  #####we need to read figure out what is the original data noise level
+  
+  pheno <- fread(file = paste0("/raid6/Ron/prs/data/bert_sample/",anc,".TRN/",anc,".TRN.psam"))
+  summary(as.factor(pheno$PHENO1))
+  ##the summary stat of phenotype deteremine how we calibrate the score into probability
+  
+  # > summary(as.factor(pheno$PHENO1))
+  # 1    2 
+  # 2000 2000 
+  #####transform the PRS to a probability
+  re.pgs.prob <- (re.pgs - min(re.pgs))/ (max(re.pgs) - min(re.pgs))
+  
+  
+  #### SD of the noise variable
+  # sd <- sqrt(abs(re.pgs))
+  
+  ### generate bootstrap Y
+  
+  boot.Y <- matrix(0, nrow = length(re.pgs), ncol = B)
+  for(i in 1:length(re.pgs)){
+    boot.Y[i,] <- rbinom(B, size = 1, prob = re.pgs.prob[i])
+  }
+  
+  ### calculate pairwise p value of correlation coefficient
+  boot.cor <- matrix(0, nrow = NCOL(gnt), ncol = B)
+  for(i in 1:B){
+    print(paste0("generating the No.",i ," bootstrap data"))
+    for(j in 1:NCOL(gnt)){
+      boot.cor[j,i] <- cor(boot.Y[,i], gnt[,j])
+    }
+  }
+  
+  fwrite(boot.cor, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_TRN_',anc,'_reference_chr', chr,'_bootcor' ))
+  
+  #####make some "fake" GWAS results
+  sample_size <- NROW(gnt)
+  for(i in 1:B){
+    t_stat <- boot.cor[,i] * sqrt(sample_size - 2)/sqrt(1 - (boot.cor[,i])^2)
+    fake_GWAS <- data.frame(P = pt(q = abs(t_stat), df = sample_size - 2, lower.tail = F),
+                            OR = 2*as.numeric(boot.cor[,i]>0) + 0.5*as.numeric(boot.cor[,i]<0))
+    fake_GWAS$n <- sample_size
+    fwrite(fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i,'_chr',chr))
   }
 }
-
-fwrite(boot.cor, file = paste0('/raid6/Tianyu/PRS/BootData/YRI_TRN_YRI_reference_chr', chr,'_bootcor' ))
-
-
-
-#####make some "fake" GWAS results
-sample_size <- NROW(gnt)
-i <- 1
-t_stat <- boot.cor[,i] * sqrt(sample_size - 2)/sqrt(1 - (boot.cor[,i])^2)
-fake_GWAS <- data.frame(P = pt(q = abs(t_stat), df = sample_size - 2, lower.tail = F),
-                        OR = 2*as.numeric(boot.cor[,i]>0) + 0.5*as.numeric(boot.cor[,i]<0))
-fwrite(fake_GWAS, file = '/raid6/Tianyu/PRS/BootData/first_bootstrap')
-
 
 # 
 # org_GWAS_results <- fread(file = "YRI.TRN.PHENO1.glm.logistic.hybrid", header=T, data.table=F)
