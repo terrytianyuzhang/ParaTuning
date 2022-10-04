@@ -217,15 +217,15 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   re.lasso=merge.mylassosum(re.chr)
 
   # save ther results
-  dir.create(paste0(work.dir,"CombinedLassoSum/Tmp"),showWarnings = F,recursive = T)
-  save(re.lasso,file=paste(work.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),".Rdata",sep=""))
+  dir.create(paste0(main.dir,"CombinedLassoSum/Tmp/"),showWarnings = F,recursive = T)
+  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),".Rdata",sep=""))
   return(i.combn)
 }
 # end of the wrapper function
 
 system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction,input.df=input.df,
                                  gwasANC = gwasANC, lambda=lambda, shrink=shrink,
-                                 main.dir=main.dir,work.dir=work.dir,CHR=1:22,mem.limit=2e10,
+                                 main.dir=main.dir,work.dir=work.dir,CHR= 20,mem.limit=2e10,
                                  mc.cores=5,mc.preschedule = F, mc.silent=F))
 #####print the above variables
 # > input.df
