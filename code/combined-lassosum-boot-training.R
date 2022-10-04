@@ -221,8 +221,17 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
 
   system.time(re.chr<-mclapply(CHR,mylassosumFunction,gamma=gamma,lambda=lambda,shrink=shrink,mem.limit = mem.limit,gwasANC = gwasANC,COR=COR,referenceFiles = referenceFiles,LDblocks = LDblocks,
                    mc.cores = 12,mc.preschedule = F))
+  print('loss in combined lassosum')
+  print(re.chr$loss)
+  print(re.chr$trainerror1)
+  print(re.chr$trainerror2)
+  
   # merge the results from the 22 chromosomes
   re.lasso=merge.mylassosum(re.chr)
+  print('loss in combined lassosum, after merging')
+  print(re.lasso$loss)
+  print(re.lasso$trainerror1)
+  print(re.lasso$trainerror2)
 
   # save ther results
   # dir.create(paste0(main.dir,"CombinedLassoSum/Tmp/"),showWarnings = F,recursive = T)
