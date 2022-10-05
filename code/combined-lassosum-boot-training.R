@@ -84,7 +84,9 @@ work.dir <- "/raid6/Ron/prs/data/bert_sample/"
 gwasANC=c("CEU","YRI")
 #### set the parameters
 GAMMA=0.5
-lambda=exp(seq(log(0.001), log(0.025), length.out=10))
+#!!!!!! need to change this back
+# lambda=exp(seq(log(0.001), log(0.025), length.out=10))
+lambda=exp(seq(log(0.001), log(0.025), length.out=2))
 shrink=.9
 
 N=seq(20000,20000,4000)
@@ -222,12 +224,13 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   system.time(re.chr<-mclapply(CHR,mylassosumFunction,gamma=gamma,lambda=lambda,shrink=shrink,mem.limit = mem.limit,gwasANC = gwasANC,COR=COR,referenceFiles = referenceFiles,LDblocks = LDblocks,
                    mc.cores = 12,mc.preschedule = F))
   print('loss in combined lassosum')
-  print(re.chr$loss)
-  print(re.chr$trainerror1)
-  print(re.chr$trainerror2)
+  print(re.chr[[1]]$loss)
+  print(re.chr[[1]]$trainerror1)
+  print(re.chr[[1]]$trainerror2)
   
+  save(re.chr, file = '/raid6/Tianyu/PRS/trash/re_chr.RData')
   # merge the results from the 22 chromosomes
-  re.lasso=merge.mylassosum(re.chr)
+  re.lasso = merge.mylassosum(re.chr)
   print('loss in combined lassosum, after merging')
   print(re.lasso$loss)
   print(re.lasso$trainerror1)
