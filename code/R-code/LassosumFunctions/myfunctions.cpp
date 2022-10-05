@@ -497,7 +497,7 @@ List myrunElnet(arma::vec& lambda, double shrink, double gamma,
                       Named("loss") = loss, //without the penalty on regression coefficients
                       Named("fbeta") = fbeta, //inlcude the penalty
                       Named("trainerror1") = trainerror1,
-                      Named("trainerror1") = trainerror1,
+                      Named("trainerror2") = trainerror2,
                       Named("sd1")= sd1,
                       Named("sd2")= sd2);
 }

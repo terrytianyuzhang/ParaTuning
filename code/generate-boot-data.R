@@ -51,8 +51,8 @@ work.dir <- "/raid6/Ron/prs/data/bert_sample/"
 lasso.files=list.files(path=paste0(main.dir,"CombinedLassoSum/Tmp/"),pattern = ".Rdata",full.names = T)
 work.df=data.frame(trn.set=rep(c("CEU.TRN","YRI.TRN"),length(lasso.files)),trn.n=20000,lasso.file=rep(lasso.files,each=2))
 
-B <- 10 ###B is the bootstrap repeats
-chr <- 20 #which chromosome did i use when training the model
+B <- 5 ###B is the bootstrap repeats
+chr <- 20:21 #which chromosome did i use when training the model
 set.seed(2019)
 for(i.set in 1:2){
     
@@ -65,9 +65,10 @@ for(i.set in 1:2){
   ####now we load the beta0
   load(lasso.file)
   beta=re.lasso$beta
+  shrink <- re.lasso$shrink 
   
   beta0 <- beta[,2] #use the second smallest lambda
-  shrink <- re.lasso$shrink 
+  
   ######next step is generating some risk score using reference genotype
   ######we can download these genotype from 1000 Genome Project
   ######for the purpose of thee paper I will just use the reference panel 
@@ -103,7 +104,7 @@ for(i.set in 1:2){
   # > summary(as.factor(pheno$PHENO1))
   # 1    2 
   # 2000 2000 
-  #####transform the PRS to a probability
+  #####calibrate the PRS to a probability
   re.pgs.prob <- (re.pgs - min(re.pgs))/ (max(re.pgs) - min(re.pgs))
   
   

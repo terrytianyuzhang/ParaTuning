@@ -162,6 +162,8 @@ mylassosum <- function(cor1, cor2,  fileName1, fileName2,
   #' \item{conv}{A vector of convergence indicators. 1 means converged. 0 not converged.}
   #' \item{pred}{\eqn{=(1-s)X\beta}}
   #' \item{loss}{\eqn{=(1-s)\beta'X'X\beta/n - 2\beta'r}}
+  #' \item{trainerror1}{training error for population 1}
+  #' \item{trainerror2}{training error for population 2}
   #' \item{fbeta}{\eqn{=\beta'R\beta - 2\beta'r + 2\lambda||\beta||_1}}
   #' \item{sd}{The standard deviation of the reference panel SNPs}
   #' \item{shrink}{same as input}

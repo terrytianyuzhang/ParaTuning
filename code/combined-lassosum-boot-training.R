@@ -96,7 +96,7 @@ input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,leng
 # memory limit
 mem.limit=2*10e9
 
-wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit){
+wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit, mc.cores = 12){
 
   # collect gamma
   gamma=input.df$gamma[i.combn]  
@@ -222,7 +222,7 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   print(CHR); flush.console()
 
   system.time(re.chr<-mclapply(CHR,mylassosumFunction,gamma=gamma,lambda=lambda,shrink=shrink,mem.limit = mem.limit,gwasANC = gwasANC,COR=COR,referenceFiles = referenceFiles,LDblocks = LDblocks,
-                   mc.cores = 12,mc.preschedule = F))
+                   mc.cores = mc.cores,mc.preschedule = F))
   print('loss in combined lassosum')
   print(re.chr[[1]]$loss)
   print(re.chr[[1]]$trainerror1)

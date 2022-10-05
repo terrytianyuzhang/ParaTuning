@@ -49,9 +49,6 @@ library(pROC) # for AUC
 library(R.utils)
 
 
-
-
-
 #### Functions to use
 mylassosumFunction <- function(chr,gamma,lambda,shrink,
                                mem.limit,gwasANC,COR,
@@ -84,7 +81,9 @@ work.dir <- "/raid6/Ron/prs/data/bert_sample/"
 gwasANC=c("CEU","YRI")
 #### set the parameters
 GAMMA=0.5
-lambda=exp(seq(log(0.001), log(0.025), length.out=10))
+###!!!!!
+lambda=exp(seq(log(0.001), log(0.025), length.out=3))
+# lambda=exp(seq(log(0.001), log(0.025), length.out=10))
 shrink=.9
 
 N=seq(20000,20000,4000)
@@ -94,7 +93,8 @@ input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,leng
 # memory limit
 mem.limit=2*10e9
 
-wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit){
+wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, 
+                            mem.limit, mc.cores = 12){
 
   # collect gamma
   gamma=input.df$gamma[i.combn]  
@@ -211,15 +211,23 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   # run lassosum
   print(CHR); flush.console()
 
-  system.time(re.chr<-mclapply(CHR,mylassosumFunction,gamma=gamma,lambda=lambda,shrink=shrink,mem.limit = mem.limit,gwasANC = gwasANC,COR=COR,referenceFiles = referenceFiles,LDblocks = LDblocks,
-                   mc.cores = 12,mc.preschedule = F))
+  system.time(
+    re.chr<-mclapply(CHR, mylassosumFunction,
+                               gamma=gamma,lambda=lambda,
+                               shrink=shrink,mem.limit = mem.limit,
+                               gwasANC = gwasANC,COR=COR,
+                               referenceFiles = referenceFiles,
+                               LDblocks = LDblocks,
+                               mc.cores = mc.cores,mc.preschedule = F)
+  )
   print('loss in combined lassosum')
   print(re.chr$loss)
   print(re.chr$trainerror1)
   print(re.chr$trainerror2)
   
+  save(re.chr, file = '/raid6/Tianyu/PRS/trash/original_model.RData')
   # merge the results from the 22 chromosomes
-  re.lasso=merge.mylassosum(re.chr)
+  re.lasso = merge.mylassosum(re.chr)
   print('loss in combined lassosum, after merging')
   print(re.lasso$loss)
   print(re.lasso$trainerror1)
@@ -233,8 +241,8 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
 
 system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction,input.df=input.df,
                                  gwasANC = gwasANC, lambda=lambda, shrink=shrink,
-                                 main.dir=main.dir,work.dir=work.dir,CHR= 20,mem.limit=2e10,
-                                 mc.cores=5,mc.preschedule = F, mc.silent=F))
+                                 main.dir=main.dir,work.dir=work.dir,CHR= 20:21,mem.limit=2e10,
+                                 mc.cores=20,mc.preschedule = F, mc.silent=F))
 #####print the above variables
 # > input.df
 # gamma    N1    N2

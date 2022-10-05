@@ -27,6 +27,9 @@ merge.mylassosum <- function(ll) {
   results$pred1 <- matrix(pred1, ncol=length(results$lambda), nrow=nrow(ll[[1]]$pred1))
   results$pred2 <- matrix(pred2, ncol=length(results$lambda), nrow=nrow(ll[[1]]$pred2))
   results$loss <- do.call("Cumsum", lapply(ll, function(x) x$loss))
+  results$trainerror1 <- do.call("Cumsum", lapply(ll, function(x) matrix(x$trainerror1, nrow = 1)))
+  results$trainerror2 <- do.call("Cumsum", lapply(ll, function(x) matrix(x$trainerror2, nrow = 1)))
+  
   results$fbeta <- do.call("Cumsum", lapply(ll, function(x) x$fbeta))
   results$sd1 <- do.call("c", lapply(ll, function(x) x$sd1))
   results$sd2 <- do.call("c", lapply(ll, function(x) x$sd2))

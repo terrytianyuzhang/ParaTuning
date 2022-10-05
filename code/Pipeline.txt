@@ -1,10 +1,19 @@
-###
-For simulation data
-###
+#####Pipeline for parameter tuning
 
-#### Get correlation vector
-Start from TRN/.pgen, .psam, .pvar data sets from Bert.
-Run run-gaws.R to get GWAS results.
+step1: fit the combined lassosum estimator using training data as usual.
+    tianyu-combined-lassosum-training.R
 
-#### Get LD matrix
+step2: choose one small-ish lambda,
+    use the corresponding hatbeta to generate bootstrap data sets.
+
+    generate-boot-data.R
+
+step3: use the bootstrap data to train several (number = repeats of bootstrap)
+    combined lasso models.
+
+    combined-lassosum-boot-training.R
+
+step4: use the bootstrap data dn bootstrap models to decide which lambda to use
+
+    estimate-cov.R
 
