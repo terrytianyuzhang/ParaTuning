@@ -204,8 +204,8 @@ for(i.set in 1:2){
   
   ### generate bootstrap Y
   
-  boot.Y <- matrix(0, nrow = length(re.pgs), ncol = B)
-  for(i in 1:length(re.pgs)){
+  boot.Y <- matrix(0, nrow = length(re.pgs.prob), ncol = B)
+  for(i in 1:length(re.pgs.prob)){
     boot.Y[i,] <- rbinom(B, size = 1, prob = re.pgs.prob[i])
   }
   

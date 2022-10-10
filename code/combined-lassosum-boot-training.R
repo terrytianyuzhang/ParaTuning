@@ -86,7 +86,8 @@ gwasANC=c("CEU","YRI")
 GAMMA=0.5
 #!!!!!! need to change this back
 # lambda=exp(seq(log(0.001), log(0.025), length.out=10))
-lambda=exp(seq(log(0.001), log(0.025), length.out=2))
+####!!! 
+lambda=exp(seq(log(0.00001), log(0.025), length.out=3)) *2
 shrink=.9
 
 N=seq(20000,20000,4000)
@@ -96,8 +97,9 @@ input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,leng
 # memory limit
 mem.limit=2*10e9
 
-wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit, mc.cores = 12){
-
+wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit, mc.cores = 12){
+###b is the boostrap repeat
+  
   # collect gamma
   gamma=input.df$gamma[i.combn]  
 
@@ -133,7 +135,7 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   COR=data.frame(CHR=map$`#CHROM`,ID=map$ID)
   
   #####!!!!!
-  COR <- COR[COR$CHR == 20,]
+  COR <- COR[COR$CHR %in% c(20,21),]
   # ##> head(COR)
   # CHR            ID
   # 1   1 1:1962845:T:C
@@ -151,9 +153,9 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
     # COR[,anc]=p2cor(p = glm$P, n = gwasN[[anc]], sign=log(glm$OR))
 
     # training bootstrap data
-    glm <- fread(paste0("/raid6/Tianyu/PRS/BootData/", anc,"_bootdata_repeat1_chr20"), header=T, data.table=F)
-    ###### !!!! n needs to be able to change
-    COR[,anc]=p2cor(p = glm$P, n = 5000, sign=log(glm$OR))
+    # glm <- fread(paste0("/raid6/Tianyu/PRS/BootData/", anc,"_bootdata_repeat1_chr20"), header=T, data.table=F)
+    glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',b), header = T, data.table =F)
+    COR[,anc]=p2cor(p = glm$P, n = glm$n[1], sign=log(glm$OR))
     
   }
   rownames(COR)=COR$ID
@@ -241,15 +243,17 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   # when training the original data
   # save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),".Rdata",sep=""))
   # training the bootstrap data
-  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot1.Rdata",sep=""))
+  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot", b,".Rdata",sep=""))
   return(i.combn)
 }
 # end of the wrapper function
-
-system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction,input.df=input.df,
+B <- 5
+for(b in 1:B){
+system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction, b = b, input.df=input.df,
                                  gwasANC = gwasANC, lambda=lambda, shrink=shrink,
-                                 main.dir=main.dir,work.dir=work.dir,CHR= 20,mem.limit=2e10,
+                                 main.dir=main.dir,work.dir=work.dir, CHR= 20:21, mem.limit=2e10,
                                  mc.cores=16,mc.preschedule = F, mc.silent=F))
+}
 #####print the above variables
 # > input.df
 # gamma    N1    N2

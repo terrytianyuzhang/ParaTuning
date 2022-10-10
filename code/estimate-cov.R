@@ -1,13 +1,36 @@
 #####load correlation vectors
 library(data.table)
-anc <- 'YRI'
+library(lassosum)
+anc <- 'YRI' ##suppose this is the population we are interested in
+anc <- 'CEU'
+#####load estimated beta
+re.lasso <- get(load("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y20000-gamma-0.50.Rdata"))
+trainerror1 <- re.lasso$trainerror1
+trainerror2 <- re.lasso$trainerror2
+
+B <- 5
+cov <- rep(0, length(re.lasso$lambda))
+for(b in 1:B){
+  boot.lasso <- get(load(paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y20000-gamma-0.50_boot",b,".Rdata")))
+  boot.beta <- boot.lasso$beta
+  
+  ##read correlation
+  boot.summary <- fread(paste0("/raid6/Tianyu/PRS/BootData/",anc,"_bootdata_repeat", b),
+                        header = T, data.table =F)
+  boot.cor <- p2cor(p = boot.summary$P, n = boot.summary$n[1],sign = log(boot.summary$OR))
+  
+  ###estimated "covariance"
+  cov.temp <- t(crossprod(boot.beta, boot.cor))
+  # cov.temp <- sapply(boot.beta, cor, y = boot.cor)
+  cov <- cov + cov.temp
+}
+
+cov <- cov/B
+
 chr <- 20
 boot_cor <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_TRN_',anc,'_reference_chr', chr,'_bootcor' ))
 
 
-#####load estimated beta
-re.lasso <- get(load("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y20000-gamma-0.50_boot1.Rdata"))
-hatbeta <- re.lasso$beta
 
 ####estimate correlation
 for(i in 1:NCOL(hatbeta)){
