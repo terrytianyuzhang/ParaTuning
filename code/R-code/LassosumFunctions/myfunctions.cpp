@@ -476,14 +476,16 @@ List myrunElnet(arma::vec& lambda, double shrink, double gamma,
     float part2;
     part2 = arma::as_scalar(gamma * 2.0 * arma::sum(x % r1));
 
-    Rcout << "This is first part:" << part1 << "\n";
-    Rcout << "This is second part:" << part2 << "\n";
+
 
     loss(i) = arma::as_scalar(gamma * arma::sum(arma::pow(yhat1, 2)) -
       gamma * 2.0 * arma::sum(x % r1) + (1-gamma) * (arma::sum(arma::pow(yhat2, 2))) - (1-gamma) * 2.0 * arma::sum(x % r2));
 
     trainerror1(i) = arma::as_scalar(arma::sum(arma::pow(yhat1, 2)) - 2.0 * arma::sum(x % r1));
     trainerror2(i) = arma::as_scalar(arma::sum(arma::pow(yhat2, 2)) - 2.0 * arma::sum(x % r2));
+
+    Rcout << "Trainerror1 in cpp" << trainerror1(i) << "\n";
+    Rcout << "Trainerror2 in cpp" << trainerror2(i) << "\n";
 
     fbeta(i) =
       arma::as_scalar(loss(i) + 2.0 * arma::sum(arma::abs(x)) * lambda(i) +

@@ -154,6 +154,11 @@ mylassosum <- function(cor1, cor2,  fileName1, fileName2,
                    )
   
   class(toreturn) <- "lassosum"
+  
+  print('loss in mylassosum.R')
+  print(toreturn$trainerror1)
+  print(toreturn$trainerror2)
+  
   return(toreturn)
   
   #' @return A list with the following

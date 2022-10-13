@@ -221,7 +221,6 @@ map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/c
 
 ####!!!!!!
 CHR=gsub("chr","",map$CHROM)
-CHR=gsub("chr","",map[CHR == 20, ]$CHROM)
 # > head(CHR)
 # [1] "1" "1" "1" "1" "1" "1"
 ####!!!!!!!!!!

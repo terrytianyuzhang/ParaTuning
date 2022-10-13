@@ -145,14 +145,9 @@ myelnet <- function(lambda1, lambda2=0.0, gamma, fileName1, fileName2, b1, b2,
   #pred2[,order] <- pred2
   #loss[order] <- loss
   #fbeta[order] <- fbeta
-    print('loss in myelnet.R')
-    print(results$loss)
-    print(results$trainerror1)
-    print(results$trainerror2)
-    
+  
   return(list(lambda1=lambda1, lambda2=lambda2, gamma=gamma, beta=results$beta, conv=results$conv, 
               pred1=results$pred1, pred2=results$pred2, loss=results$loss, fbeta=results$fbeta,
-              trainerror1 = results$trainerror1, trainerror2 = results$trainerror2, 
               sd1=results$sd1, sd2=results$sd2))
   
 }

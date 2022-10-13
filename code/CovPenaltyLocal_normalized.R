@@ -362,7 +362,7 @@ results <- rbind(results, temp.results)
 }
 
 save(results, 
-     file = '/Users/tianyu/Documents/ParaTuning/data/cov_penalty_local_study_times2_normalize_5.RData')
+     file = '/Users/tianyu/Documents/ParaTuning/data/cov_penalty_local_study_times2_normalize_6.RData')
 
 results <- data.table(results)
 results[, diff := cov.auc - cv.auc]
@@ -375,3 +375,34 @@ ggplot(results) +
 ggplot(results) +
   geom_histogram(aes(x=diff), 
                  fill="blue", alpha=0.8, binwidth = 0.01)
+
+
+########################################
+########################################
+########################################
+
+#######load existing data and plot#####
+for(i in 1:6){
+results <- get(load(paste0("/Users/tianyu/Documents/ParaTuning/data/cov_penalty_local_study_times2_normalize_",i,".RData")))
+print(results$n)
+print(results$p)
+
+results <- data.table(results)
+results[, diff := cov.auc - cv.auc]
+print(ggplot(results) +
+  geom_histogram(aes(x=cv.auc), 
+                 fill="blue", alpha=0.8, binwidth = 0.01)+
+  geom_histogram(aes(x=cov.auc), 
+                 fill="red", alpha=0.8, binwidth = 0.01)+
+  ggtitle(paste0("n=",results$n[1]," p=", results$p[1]))+
+    xlab('testing auc')
+  )
+
+print(ggplot(results) +
+  geom_histogram(aes(x=diff), 
+                 fill="blue", alpha=0.8, binwidth = 0.01)+
+    ggtitle(paste0("n=",results$n[1]," p=", results$p[1]))+
+    xlab('testing auc: Cov pen. minus cv'))
+}
+
+

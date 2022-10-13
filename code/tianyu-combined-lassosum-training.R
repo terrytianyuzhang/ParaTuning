@@ -62,6 +62,9 @@ mylassosumFunction <- function(chr,gamma,lambda,shrink,
                 trace=2,
                 LDblocks1=as.data.frame(LDblocks[[gwasANC[1]]][LDblocks[[gwasANC[1]]]$chr == paste0("chr",chr),]), 
                 LDblocks2=as.data.frame(LDblocks[[gwasANC[2]]][LDblocks[[gwasANC[2]]]$chr == paste0("chr",chr),]))
+  print('loss in mylassosumFunction')
+  print(re$trainerror1)
+  print(re$trainerror2)
   return(re)
 }
 

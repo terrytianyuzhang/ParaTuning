@@ -21,6 +21,7 @@ for(b in 1:B){
   
   ###estimated "covariance"
   cov.temp <- t(crossprod(boot.beta, boot.cor))
+  print(cov.temp)
   # cov.temp <- sapply(boot.beta, cor, y = boot.cor)
   cov <- cov + cov.temp
 }
