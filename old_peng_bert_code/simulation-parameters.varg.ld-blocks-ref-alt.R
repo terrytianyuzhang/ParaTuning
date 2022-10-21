@@ -12,12 +12,12 @@ library(R.utils)
 # seed=918s
 
 # number of causal SNP 
-n.causal=4000
+n.causal=4000 ###tianyu don't have to specify it when just creating people
 i.sim=paste0("NC",n.causal)
 
 # set the total SNP heritability
 h2=data.frame(CEU = 0.8,YRI = .6)
-vare=1 # needs to be 1 for logistic regression
+vare=1 # needs to be 1 for logistic regression, environment variance
 varg=(h2/(1-h2))*vare
 
 # set the random number generator using seed
@@ -42,7 +42,7 @@ dir.create(work.dir,showWarnings = F, recursive = T)
 params$run.info$main.dir=main.dir
 params$run.info$work.dir=work.dir
 
-# read the map for our analysis
+# read the map for our analysis, tianyu may not need this
 snp.map=fread("/data3/DownLoadedData/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map",header=T,data.table=F)
 snp.map$CHROM=as.numeric(gsub("chr","",snp.map$CHROM))
 rownames(snp.map)=snp.map$ID
@@ -127,26 +127,26 @@ sum(2*snp$YRI.frq*(1-snp$YRI.frq)*snp$YRI.beta^2)
 
 
 # save the selected parameters
-params$run.info$sel.snp=snp
-
+params$run.info$sel.snp=snp #####START SELECTING SNP
+#########SELECTING SNP ENDS HERE####
 # determine the mean genetic contribution
 params$run.info$gnt.mn=data.frame(CEU=sum(2*snp$CEU.beta*snp$CEU.frq), YRI=sum(2*snp$YRI.beta*snp$YRI.frq))
 
 
 # set up the different subsets of data to generate with their parameters
 
-anc="CEU.GWAS"
+anc="CEU.GWAS" ####CEU.REFERENCE1
 N=20000     # training
 params[[anc]]$ancestry=unlist(strsplit(anc,"\\."))[1]
 params[[anc]]$seed=sample(100000,1)
 params[[anc]]$chr=1:22
 params[[anc]]$blocks=unique(snp.map$CEU.blk)
 params[[anc]]$n.haplo=358
-params[[anc]]$n.causal=nrow(snp)
+params[[anc]]$n.causal=nrow(snp) #set to NA
 params[[anc]]$prev=0.015
-params[[anc]]$n.case=N/2
-params[[anc]]$n.control=N/2
-params[[anc]]$n.sample=min(1000000,N*50)
+params[[anc]]$n.case=N/2 #need to be NA
+params[[anc]]$n.control=N/2 #need to be NA
+params[[anc]]$n.sample=min(1000000,N*50) # = N ####duplicate the above for several times
 
 anc="CEU.TRN"
 N=20000     # training

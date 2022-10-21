@@ -1,7 +1,9 @@
+
 rm(list=ls()); 
 gc()
 options(stringsAsFactors = F)
 #####I am trying to fit combined lassosum algorithm
+setting.title <- '1in2signal'
 
 #########
 ### The strategy to determine the combined lassosum is to use the architecture of the computer to determine the solutions
@@ -86,8 +88,7 @@ gwasANC=c("CEU","YRI")
 GAMMA=0.5
 #!!!!!! need to change this back
 # lambda=exp(seq(log(0.001), log(0.025), length.out=10))
-####!!! 
-lambda=exp(seq(log(0.00001), log(0.025), length.out=3)) *2
+lambda=exp(seq(log(0.005), log(0.025), length.out=10)) 
 shrink=.9
 
 N=seq(20000,20000,4000)
@@ -154,7 +155,9 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
 
     # training bootstrap data
     # glm <- fread(paste0("/raid6/Tianyu/PRS/BootData/", anc,"_bootdata_repeat1_chr20"), header=T, data.table=F)
-    glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',b), header = T, data.table =F)
+    # glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',b), header = T, data.table =F)
+    glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_',setting.title,'_repeat',b), header = T, data.table =F)
+    # glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/', anc,'.TRN.SUBSET'))
     COR[,anc]=p2cor(p = glm$P, n = glm$n[1], sign=log(glm$OR))
     
   }
@@ -243,11 +246,14 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
   # when training the original data
   # save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),".Rdata",sep=""))
   # training the bootstrap data
-  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot", b,".Rdata",sep=""))
+  
+  # save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot", b,".Rdata",sep=""))
+  
+  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot_",setting.title,"_", b,".Rdata",sep=""))
   return(i.combn)
 }
 # end of the wrapper function
-B <- 5
+B <- 1
 for(b in 1:B){
 system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction, b = b, input.df=input.df,
                                  gwasANC = gwasANC, lambda=lambda, shrink=shrink,

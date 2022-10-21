@@ -49,7 +49,7 @@ for(set in names(params)[-1]){
     
       #### determine the binary outcome
       # for each block, calculate the genetic values
-      blocks=unique(params$run.info$sel.snp[,paste0(params[[set]]$ancestry,".blk")])
+      blocks=unique(params$run.info$sel.snp[,paste0(params[[set]]$ancestry, ".blk")])
       block.12=which(unlist(lapply(strsplit(gsub("H:","",colnames(cc.haplotypes)),"\\."),`[[`,1)) %in% blocks)
 #      rm(gnt.contrib)
       # all in memory, tends to be slow.

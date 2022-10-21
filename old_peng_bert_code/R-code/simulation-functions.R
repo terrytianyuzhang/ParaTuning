@@ -193,7 +193,7 @@ multiNodeGenotypeSimulation <- function(i.subset,subsets,anc,selected.cc.haploty
   
 }
 
-
+###this is what i need
 multiNodeGenotypeSimulation.ld.blocks <- function(block,set,anc,selected.cc.haplotypes,main.dir,haplo.dir,gnt.dir){
   #### read the haplotypes
   haplos=fread(paste(haplo.dir,anc,"_haplotypes/",anc,"-",block,"-qc.haplo.gz",sep=""),header=T,data.table=F)

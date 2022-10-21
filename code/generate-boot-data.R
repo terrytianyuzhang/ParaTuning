@@ -1,7 +1,8 @@
 #####there are 129,897 SNPs in chr20
 #####dim(numeric_ref_genotypes)
 #####[1]   5000 129897
-
+set.seed(2019)
+print('generate bootstrap data')
 rm(list=ls()); gc()
 options(stringsAsFactors = F)
 
@@ -58,7 +59,7 @@ load(lasso.file)
 beta=re.lasso$beta
 shrink <- re.lasso$shrink 
 
-beta0 <- beta[,2] #use the second smallest lambda to generate bootstrap data
+beta0 <- beta[,ceiling(NCOL(beta)/2)] #use the second smallest lambda to generate bootstrap data
 
 ####
 # map=fread("/data3/DownLoadedData/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map",header=T,data.table=F)[,c("CHROM","ID")]
@@ -82,7 +83,7 @@ CHR=gsub("chr","",map$CHROM)
 SNP <- map[CHR %in% 20:21, ]$ID
 names(beta0) <- SNP
 
-B <- 5 ###B is the bootstrap repeats
+B <- 2 ###B is the bootstrap repeats
 chrs <- 20:21 #which chromosome did i use when training the model
 
 PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
@@ -96,21 +97,30 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
   snp <- names(beta0)[chr_loc == chr]
   
   ####load genotype data without label
-  system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
-                              bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
-                              fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
+  
+  system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bed"),
+                              bim=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bim"),
+                              fam=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"),
                               select.snps = snp)
   )
+  
+  # system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
+  #                             bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
+  #                             fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
+  #                             select.snps = snp)
+  # )
   gnt_map <- gnt$map
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
-  system.time(gnt<-2-as(gnt$genotypes,Class="numeric"))
+  system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
   
   # center the columns
   system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
   # normalize the calls to the unit 1 norm
   system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
+  
   # apply the proper shrinkage
-  system.time(gnt<-gnt*sqrt(1-shrink))
+  # system.time(gnt<-gnt*sqrt(1-shrink))
+  
   # calculate the pgs
   system.time(re.pgs<-gnt%*%beta0[chr_loc == chr])
   return(re.pgs)
@@ -124,11 +134,18 @@ cor_bychr_bootstrap <- function(chr, anc, bootY, beta0, shrink, B){
   snp <- names(beta0)[chr_loc == chr]
   
   ####load genotype data without label
-  system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
-                              bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
-                              fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
+  system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bed"),
+                              bim=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bim"),
+                              fam=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"),
                               select.snps = snp)
   )
+  
+  # system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
+  #                             bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
+  #                             fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
+  #                             select.snps = snp)
+  # )
+  
   gnt_map <- gnt$map
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
   system.time(gnt<-2-as(gnt$genotypes,Class="numeric"))
@@ -144,7 +161,8 @@ cor_bychr_bootstrap <- function(chr, anc, bootY, beta0, shrink, B){
   for(i in 1:B){
     print(paste0('the No.',i,'boostrap data'))
     for(j in 1:NCOL(gnt)){
-      boot.cor[j,i] <- cor(boot.Y[,i], gnt[,j])
+      ###after the proper normalization, correlation is the same as inner product
+      boot.cor[j,i] <- crossprod(boot.Y[,i], gnt[,j] )
     }
   }
   
@@ -154,7 +172,7 @@ cor_bychr_bootstrap <- function(chr, anc, bootY, beta0, shrink, B){
   sample_size <- NROW(gnt)
   for(i in 1:B){
     t_stat <- boot.cor[,i] * sqrt(sample_size - 2)/sqrt(1 - (boot.cor[,i])^2)
-    fake_GWAS <- data.frame(P = pt(q = abs(t_stat), df = sample_size - 2, lower.tail = F),
+    fake_GWAS <- data.frame(P = 2*pt(q = abs(t_stat), df = sample_size - 2, lower.tail = F), #two-sided p-value
                             OR = 2*as.numeric(boot.cor[,i]>0) + 0.5*as.numeric(boot.cor[,i]<0))
     fake_GWAS$n <- sample_size
     fake_GWAS_list[[i]] <- fake_GWAS
@@ -198,7 +216,8 @@ for(i.set in 1:2){
   # 2000 2000 
   #####calibrate the PRS to a probability, this is 1:1 case control setting
   re.pgs.prob <- (pgs - min(pgs))/ (max(pgs) - min(pgs))
-  
+  #!!!!!!!!!
+  re.pgs.prob <- 0.5 + (re.pgs.prob - 0.5)*0
   #### SD of the noise variable
   # sd <- sqrt(abs(re.pgs))
   
@@ -208,6 +227,17 @@ for(i.set in 1:2){
   for(i in 1:length(re.pgs.prob)){
     boot.Y[i,] <- rbinom(B, size = 1, prob = re.pgs.prob[i])
   }
+  
+  # center and normalize the boostrap Y
+  boot.Y <- boot.Y - rep(1, nrow(boot.Y)) %*% t(colMeans(boot.Y))
+  
+  boot.Y <- normalize.cols(boot.Y, method="euclidean",p=2)
+  
+  # save(boot.Y, 
+  #      file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootY'))
+  
+  save(boot.Y, 
+       file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootY_lowsignal'))
   
   # cor_bychr_bootstrap(chr = chrs[1], anc = anc, bootY = bootY, 
   #                     beta0 = beta0, shrink = shrink, B = B)
@@ -225,9 +255,11 @@ for(i.set in 1:2){
         one_fake_GWAS <- rbind(one_fake_GWAS, fake_GWAS[[j]][[i]])
       }
     }
-    fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i))
+    # fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i))
+    
+    fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_lowsignal_repeat',i))
   }
-  
+  # '/raid6/Tianyu/PRS/BootData/CEU_bootdata_repeat1'
   
   # 
   # ######next step is generating some risk score using reference genotype

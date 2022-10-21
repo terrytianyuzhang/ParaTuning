@@ -85,14 +85,17 @@ gwasANC=c("CEU","YRI")
 #### set the parameters
 GAMMA=0.5
 ###!!!!!
-lambda=exp(seq(log(0.00001), log(0.025), length.out=3))
+lambda=exp(seq(log(0.005), log(0.025), length.out=10)) 
 # lambda=exp(seq(log(0.001), log(0.025), length.out=10))
 shrink=.9
 
+###!!!!this is not correct
 N=seq(20000,20000,4000)
 input.df=data.frame(N1=rep(N,each=length(N)),N2=rep(N,length(N)))
 input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,length(GAMMA)),N2=rep(input.df$N2,length(GAMMA)))
 
+###this is the correct sample size
+input.df <- data.frame(gamma = GAMMA, N1 = 20000, N2 = 4000)
 # memory limit
 mem.limit=2*10e9
 
@@ -145,6 +148,7 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
   for(anc in gwasANC){
     # glm=fread(paste0(work.dir,anc,".GWAS/Assoc/",anc,".GWAS-",gwasN[[anc]],".PHENO1.glm.logistic.hybrid"),header=T,data.table=F)
     glm <- fread(paste0(work.dir, anc, '.TRN.PHENO1.glm.logistic.hybrid'), header=T, data.table=F)
+    #'/raid6/Ron/prs/data/bert_sample/CEU.TRN.PHENO1.glm.logistic.hybrid'
     COR[,anc]=p2cor(p = glm$P, n = gwasN[[anc]], sign=log(glm$OR))
   }
   rownames(COR)=COR$ID
