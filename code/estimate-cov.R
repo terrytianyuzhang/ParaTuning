@@ -4,9 +4,10 @@ library(lassosum)
 
 setting.title <- '1in2signal'
  ##suppose this is the population we are interested in
-
 anc <- 'YRI'
 anc <- 'CEU'
+
+
 #####load estimated beta
 re.lasso <- get(load("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50.Rdata"))
 trainerror1 <- re.lasso$trainerror1
@@ -61,7 +62,6 @@ yriorg <- yriorg[chr %in% c(20,21),]
 summary(yricor.org <- p2cor(p = yriorg$P, n = 4000,sign = log(yriorg$OR)))
 summary(yricor.boot <- p2cor(p = yriboot$P, n = 4000,sign = log(yriboot$OR)))
 # 
-
 
 ##########
 

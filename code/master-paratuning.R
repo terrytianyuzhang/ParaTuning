@@ -1,5 +1,5 @@
-# print('original model fitting')
-# source("tianyu-combined-lassosum-training.R")
+print('original model fitting')
+source("tianyu-combined-lassosum-training.R")
 
 print('generate boot')
 source("generate-boot-data-calib.R")

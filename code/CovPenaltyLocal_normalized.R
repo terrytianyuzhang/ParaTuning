@@ -95,7 +95,7 @@ risk.score.new <- newx %*% beta0
 risk.score.new <- (risk.score.new - min(risk.score.new))/ (max(risk.score.new) - min(risk.score.new))
 
 ####
-B <- 5
+B <- 1
 boot.Y <- matrix(0, nrow = bootn, ncol = B)
 for(b in 1:B){
   
