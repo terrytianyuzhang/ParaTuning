@@ -175,7 +175,7 @@ save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
 #######load the PGS score and phenotype information, then calculate ROC
 library(data.table)
 library(pROC)
-anc <- 'CEU'
+anc <- 'YRI'
 PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc)))
 
 nlambda <- NCOL(PGSnPHENO) - 1

@@ -126,7 +126,7 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
 
 for(i.set in 1:2){
   
-  anc <- if(i.set == 1) 'CEU' else 'YRI'
+  anc <- if(i.set == 1){'CEU'} else 'YRI'
   
   pheno <- fread(file = paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr20.fam"))
   
@@ -162,7 +162,7 @@ for(i.set in 1:2){
 #######load the PGS score and phenotype information, then calculate ROC
 library(data.table)
 library(pROC)
-
+anc <- 'CEU'
 PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_org_',anc, '.RData')))
 
 nlambda <- NCOL(PGSnPHENO) - 1
