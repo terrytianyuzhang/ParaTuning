@@ -175,13 +175,30 @@ save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
 #######load the PGS score and phenotype information, then calculate ROC
 library(data.table)
 library(pROC)
+anc <- 'CEU'
+PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc)))
+
+nlambda <- NCOL(PGSnPHENO) - 1
+PGSnPHENO[PGSnPHENO[,nlambda + 1] >0, nlambda + 1] <- 0.5
+PGSnPHENO[PGSnPHENO[,nlambda + 1] <0, nlambda + 1] <- -0.5
+aucs <- rep(0, nlambda)
+for(i in 1:nlambda){
+  aucs[i] <- auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i])
+}
+save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_auc_',anc, '.RData'))
+
 anc <- 'YRI'
 PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc)))
 
 nlambda <- NCOL(PGSnPHENO) - 1
+PGSnPHENO[PGSnPHENO[,nlambda + 1] >0, nlambda + 1] <- 0.5
+PGSnPHENO[PGSnPHENO[,nlambda + 1] <0, nlambda + 1] <- -0.5
+aucs <- rep(0, nlambda)
 for(i in 1:nlambda){
-  print(auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i]))
-  }
+  aucs[i] <- auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i])
+}
+save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_auc_',anc, '.RData'))
+
 
 
 

@@ -85,7 +85,8 @@ gwasANC=c("CEU","YRI")
 #### set the parameters
 GAMMA=0.5
 ###!!!!!
-lambda=exp(seq(log(0.005), log(0.025), length.out=5))
+lambda=exp(seq(log(0.0025), log(0.025), length.out=10))
+lambda[1] <- 0.00025
 # lambda=exp(seq(log(0.007), log(0.05), length.out=10))  ##try larger lambda
 
 # lambda=exp(seq(log(0.001), log(0.025), length.out=10))

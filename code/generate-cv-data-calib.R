@@ -22,7 +22,7 @@ library(wordspace)
 setting.title <- '1in2signal'
 chrs <- 20:21 #which chromosome did i use when training the model
 
-nfold <- 10
+nfold <- 5
 ##########read in lasso results##########
 lasso.file <- "/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50.Rdata"
 
@@ -258,9 +258,10 @@ cor_bychr_bootstrap <- function(chr, anc, boot.Y, B){
   
   ###calculate pairwise correlation
   print('calculating pairwise correaltion')
+  print(paste0('B is ', B))
   boot.cor <- matrix(0, nrow = NCOL(gnt), ncol = B)
   for(i in 1:B){
-    print(paste0('the No.',i,'boostrap data'))
+    print(paste0('the No.',i,'boostrap data of ', anc))
     for(j in 1:NCOL(gnt)){
       ###after the proper normalization, correlation is the same as inner product
       boot.cor[j,i] <- crossprod(boot.Y[,i], gnt[,j] )
