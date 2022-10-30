@@ -3,7 +3,7 @@ rm(list=ls());
 gc()
 options(stringsAsFactors = F)
 #####I am trying to fit combined lassosum algorithm
-setting.title <- '1in2signal'
+setting.title <- 'CEUa1YRIa2CV'
 
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"

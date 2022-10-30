@@ -19,7 +19,8 @@ library(R.utils)
 library(snpStats)
 library(wordspace)
 
-setting.title <- '1in2signal'
+setting.title <- 'CEUa1YRIa2CV'
+print(setting.title)
 chrs <- 20:21 #which chromosome did i use when training the model
 
 nfold <- 5
@@ -50,25 +51,26 @@ CHR <- gsub("chr","",map$CHROM)
 SNP <- map[CHR %in% 20:21, ]$ID
 names(beta0) <- SNP
 
+##uncomment
 PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
-  
+
   ######next step is generating some risk score using reference genotype
   ######we can download these genotype from 1000 Genome Project
-  ######for the purpose of thee paper I will just use the reference panel 
+  ######for the purpose of thee paper I will just use the reference panel
   ######from which the training samples are generated
-  
+
   chr_loc <- as.numeric(gsub(':.*$','',names(beta0)))
   snp <- names(beta0)[chr_loc == chr]
-  
+
   ####load genotype data without label
-  
+
   system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bed"),
                               bim=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bim"),
                               fam=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"),
                               select.snps = snp)
   )
   #example : "/raid6/Tianyu/PRS/bert_sample/YRI.TUNE/CHR/YRI.TUNE-chr20.bed"
-  
+
   # system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
   #                             bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
   #                             fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
@@ -77,15 +79,15 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
   gnt_map <- gnt$map
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
   system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
-  
+
   # center the columns
   system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
   # normalize the calls to the unit 1 norm
   system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
-  
+
   # apply the proper shrinkage
   # system.time(gnt<-gnt*sqrt(1-shrink))
-  
+
   # calculate the pgs
   system.time(re.pgs<-gnt%*%beta0[chr_loc == chr])
   return(re.pgs)
@@ -95,29 +97,29 @@ risk.score.list <- vector("list",2)
 
 ####uncomment from here
 for(i.set in 1:2){
-  
+
   if(i.set == 1){
     anc <- 'CEU'
   }else{
     anc <- 'YRI'
   }
-  
+
   re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc,
                       beta0 = beta0, shrink = shrink, mc.cores = 4)
-  
+
   ### sum the results
   pgs <- re.pgss[[1]] #this is the first chromosome
   for(i in 2:length(re.pgss)){
     pgs <- pgs+re.pgss[[i]]
   }
-  
+
   risk.score.list[[i.set]] <- pgs
-  
+
 }
 ### save risk scores for each population
 save(risk.score.list, file = '/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50-riskscore.Rdata')
 ###pgs is the risk score for each subject in the reference panel
-######uncomment
+#####uncomment
 
 
 ###########generate Y##############
@@ -172,7 +174,7 @@ summary(yricor.org <- p2cor(p = yriorg$P, n = 4000,sign = log(yriorg$OR)))
 #this is the calibration slope a
 a <- yricor.org %*% re.lasso$beta[,5] * sqrt(s.size)/(2 * s2)
 a <- as.numeric(a)
-a <- a/2
+a <- a/4
 mu <-  a * risk.score.list[[2]] + 0.5
 
 print(paste0('number of beyond 0/1 range', sum(mu > 1 | mu<0)))
@@ -198,10 +200,10 @@ for(anc in c("CEU", "YRI")){
   }
   
   val.index <- sort(sample(1:s.size, floor(s.size/nfold)))
-  save(val.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/val_index.RData"))
+  save(val.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/", setting.title,"val_index.RData"))
   
   train.index <- (1:s.size)[-val.index] #this is in order
-  save(train.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/train_index.RData"))
+  save(train.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/",setting.title,"train_index.RData"))
 
   ####generate training and testing .fam files
 
@@ -296,7 +298,7 @@ for(i.set in 1:2){
   }
   
   booty <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,"_bootY_",setting.title,".RData")))
-  train.index <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/train_index.RData")))
+  train.index <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/",setting.title, "train_index.RData")))
   booty <- booty[train.index]
   # ceubooty <- get(load("/raid6/Tianyu/PRS/BootData/CEU_bootY_calib.RData"))
   # yribooty <- get(load("/raid6/Tianyu/PRS/BootData/YRI_bootY_calib.RData"))

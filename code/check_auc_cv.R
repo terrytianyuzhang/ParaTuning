@@ -3,7 +3,7 @@ set.seed(2019)
 rm(list=ls()); gc()
 options(stringsAsFactors = F)
 
-setting.title <- '1in2signal'
+setting.title <- 'CEUa1YRIa2CV'
 # #### software needed
 # plink <- "/usr/local/bin/plink"
 # plink2 <- "/usr/local/bin/plink2"
@@ -49,7 +49,7 @@ work.dir <- "/raid6/Ron/prs/data/bert_sample/"
 # lasso.files=list.files(path=paste0(main.dir,"CombinedLassoSum/Tmp/"),pattern = ".Rdata",full.names = T)
 # work.df=data.frame(trn.set=rep(c("CEU.TRN","YRI.TRN"),length(lasso.files)),trn.n=20000,lasso.file=rep(lasso.files,each=2))
 
-lasso.file <- "/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y20000-gamma-0.50_boot_1in2signal_1.Rdata"
+lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y20000-gamma-0.50_boot_",setting.title, "_1.Rdata")
 
 ####now we load the beta0
 load(lasso.file)
@@ -99,7 +99,7 @@ booty <- get(load(file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootY_',sett
 #   val.index[i] <- which(full.fam[,1] == as.character(val.txt[i,1]))
 # }
 
-val.index <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/val_index.RData")))
+val.index <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/",setting.title, "val_index.RData")))
 
 pheno <- booty[val.index]
 
