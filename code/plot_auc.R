@@ -1,6 +1,8 @@
+setting.title <- 'CEUa1YRIa3CV'
 results <- data.frame()
+
 anc <- "CEU"
-auc <- get(load('/Users/tianyu/Documents/ParaTuning/data/PGSnPHENO_auc_CEU.RData'))
+auc <- get(load(paste0('/Users/tianyu/Documents/ParaTuning/data/',setting.title,'PGSnPHENO_auc_CEU.RData')))
 temp.results <- data.frame(lambda.index = 1:10,
                            population = rep(anc, length(auc)),
                            auc = auc,
@@ -8,7 +10,7 @@ temp.results <- data.frame(lambda.index = 1:10,
 results <- rbind(results, temp.results)
 
 anc <- "YRI"
-auc <- get(load('/Users/tianyu/Documents/ParaTuning/data/PGSnPHENO_auc_YRI.RData'))
+auc <- get(load(paste0('/Users/tianyu/Documents/ParaTuning/data/',setting.title,'PGSnPHENO_auc_YRI.RData')))
 temp.results <- data.frame(lambda.index = 1:10,
                            population = rep(anc, length(auc)),
                            auc = auc,
@@ -38,4 +40,5 @@ ggplot()+
             data = results)+
   geom_point(aes(x = lambda.index, y = auc, group = as.factor(paste0(population ,setting)),
                 color = as.factor(paste0(population ,setting))), 
-            data = results)
+            data = results)+
+  ylim(c(0.45, 0.6))

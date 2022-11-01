@@ -21,7 +21,6 @@ library(R.utils)
 library(snpStats)
 library(wordspace)
 
-setting.title <- '1in2signal'
 chrs <- 20:21 #which chromosome did i use when training the model
 
 
@@ -31,7 +30,8 @@ lasso.file <- "/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-ga
 re.lasso <- get(load(lasso.file))
 beta <- re.lasso$beta
 
-beta0 <- beta[,ceiling(NCOL(beta)/2)] #use a small lambda to generate bootstrap data
+beta0.index <- ceiling(NCOL(beta)/2)
+beta0 <- beta[,beta0.index] #use a small lambda to generate bootstrap data
 ##########read in genotype and calculate score#############
 map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map',header=T,data.table=F)[,c("CHROM","ID")]
 # > head(map)
@@ -155,7 +155,7 @@ names(ceuorg)[1] <- 'chr'
 ceuorg <- ceuorg[chr %in% c(20,21),]
 summary(ceucor.org <- p2cor(p = ceuorg$P, n = 20000,sign = log(ceuorg$OR)))
 
-a <- ceucor.org %*% re.lasso$beta[,5] * sqrt(s.size)/(2 * s2)
+a <- ceucor.org %*% re.lasso$beta[,beta0.index] * sqrt(s.size)/(2 * s2)
 a <- as.numeric(a)
 
 as[[1]] <- c(a/2, a/4, a/8)
@@ -176,7 +176,7 @@ yriorg <- yriorg[chr %in% c(20,21),]
 summary(yricor.org <- p2cor(p = yriorg$P, n = 4000,sign = log(yriorg$OR)))
 
 #this is the calibration slope a
-a <- yricor.org %*% re.lasso$beta[,5] * sqrt(s.size)/(2 * s2)
+a <- yricor.org %*% re.lasso$beta[,beta0.index] * sqrt(s.size)/(2 * s2)
 a <- as.numeric(a)
 
 as[[2]] <- c(a/2, a/4, a/8)
@@ -389,19 +389,21 @@ for(a1i in 1:3){
 
 
 ###read in the combined lasso results
-results <- data.frame()
-for(a1i in 1:3){
-  for(a2i in 1:3){
-    setting.title <- paste0('CEUa',a1i,'YRIa',a2i)
 
-    re.lasso <- get(load(paste0('/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_boot_',setting.title,'.Rdata')))
 
-    results.temp <- data.frame(a1 = a1i,
-                               a2 = a2i,
-                               trainerror1 = re.lasso$trainerror1,
-                               trainerror2 = re.lasso$trainerror2)
-    results <- rbind(results, results.temp)
-    }
-}
-results$ratio <- results$trainerror2/results$trainerror1
-
+# results <- data.frame()
+# for(a1i in 1:3){
+#   for(a2i in 1:3){
+#     setting.title <- paste0('CEUa',a1i,'YRIa',a2i)
+# 
+#     re.lasso <- get(load(paste0('/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_boot_',setting.title,'.Rdata')))
+# 
+#     results.temp <- data.frame(a1 = a1i,
+#                                a2 = a2i,
+#                                trainerror1 = re.lasso$trainerror1,
+#                                trainerror2 = re.lasso$trainerror2)
+#     results <- rbind(results, results.temp)
+#     }
+# }
+# results$ratio <- results$trainerror2/results$trainerror1
+# 

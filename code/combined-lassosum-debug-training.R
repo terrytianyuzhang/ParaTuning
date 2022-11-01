@@ -1,10 +1,24 @@
-
 rm(list=ls()); 
 gc()
 options(stringsAsFactors = F)
 #####I am trying to fit combined lassosum algorithm
-setting.title <- 'CEUa1YRIa2CV'
 
+#########
+### The strategy to determine the combined lassosum is to use the architecture of the computer to determine the solutions
+### It works from the original Peng code without any modifications to increase the speed.
+### In this setting we do a grid search on 5 values of gamma and 5 for lambda
+### The code accepts multiple lambdas in pone run, but swill only use a single gamma
+### For each complete run we need to run the program, 5 times.
+### By calculating the lassosum by chromososome there is an additional level of parallelization that can be achieved.
+### After some experimentation I came to the conclusion that the quickest approach is to use 12 processors for the 22 chromosomes.
+### For this I used a memory limit per processor of 20Gb
+### This allows the smaller chromosomes to run on the same processor and be done at the same times the smaller ones.
+### A single run can then be completed in 20 minutes using 1+12 processors at a memory cost of ~260Gb. On our 2 Tb computer with 192 cores 
+### we can run 7 gammas simultaneously. I opted to use 5, to allow me some memory to do additional work.
+
+#### software needed
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"
 
@@ -27,7 +41,6 @@ source(paste0("R-code/LassosumFunctions/validation.R"))
 source(paste0("R-code/LassosumFunctions/merge.mylassosum.R"))
 Rcpp::sourceCpp(paste0("R-code/LassosumFunctions/myfunctions.cpp"))
 
-
 library(data.table)
 library(pryr) # check memory useage
 library(lassosum) #transform p value to correlation
@@ -49,33 +62,14 @@ mylassosumFunction <- function(chr,gamma,lambda,shrink,
                 trace=2,
                 LDblocks1=as.data.frame(LDblocks[[gwasANC[1]]][LDblocks[[gwasANC[1]]]$chr == paste0("chr",chr),]), 
                 LDblocks2=as.data.frame(LDblocks[[gwasANC[2]]][LDblocks[[gwasANC[2]]]$chr == paste0("chr",chr),]))
+  print('loss in mylassosumFunction')
+  print(re$trainerror1)
+  print(re$trainerror2)
   return(re)
 }
 
-main.dir <- "/raid6/Tianyu/PRS/"
-work.dir <- "/raid6/Ron/prs/data/bert_sample/"
-
-### ancestries
-gwasANC=c("CEU","YRI")
-#### set the parameters
-GAMMA=0.5
-#!!!!!! need to change this back
-# lambda=exp(seq(log(0.001), log(0.025), length.out=10))
-# lambda=exp(seq(log(0.005), log(0.025), length.out=10)) 
-lambda=exp(seq(log(0.0025), log(0.025), length.out=10))
-lambda[1] <- 0.00025
-
-shrink=.9
-
-N=seq(20000,20000,4000)
-input.df=data.frame(N1=rep(N,each=length(N)),N2=rep(N,length(N)))
-input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,length(GAMMA)),N2=rep(input.df$N2,length(GAMMA)))
-
-# memory limit
-mem.limit=2*10e9
-
-wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, mem.limit, mc.cores = 12){
-  ###b is the boostrap repeat
+wrapperFunction <- function(i.combn, setting.title, input.df, gwasANC, lambda, shrink, main.dir, work.dir, CHR=1:22, 
+                            mem.limit, mc.cores = 12){
   
   # collect gamma
   gamma=input.df$gamma[i.combn]  
@@ -110,7 +104,6 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
   
   
   COR=data.frame(CHR=map$`#CHROM`,ID=map$ID)
-  
   #####!!!!!
   COR <- COR[COR$CHR %in% c(20,21),]
   # ##> head(COR)
@@ -123,29 +116,24 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
   # 6   1 1:1964101:A:G
   
   for(anc in gwasANC){
-    # in bert's computer
     # glm=fread(paste0(work.dir,anc,".GWAS/Assoc/",anc,".GWAS-",gwasN[[anc]],".PHENO1.glm.logistic.hybrid"),header=T,data.table=F)
-    # when training the original data
-    # glm <- fread(paste0(work.dir, anc, '.TRN.PHENO1.glm.logistic.hybrid'), header=T, data.table=F)
-    # COR[,anc]=p2cor(p = glm$P, n = gwasN[[anc]], sign=log(glm$OR))
-    
-    # training bootstrap data
-    # glm <- fread(paste0("/raid6/Tianyu/PRS/BootData/", anc,"_bootdata_repeat1_chr20"), header=T, data.table=F)
-    # glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',b), header = T, data.table =F)
-    glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_',setting.title,'_repeat',b), header = T, data.table =F)
-    # glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/', anc,'.TRN.SUBSET'))
-    COR[,anc]=p2cor(p = glm$P, n = glm$n[1], sign=log(glm$OR))
-  }
+    glm <- fread(paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_',setting.title,'_repeat1'), header=T, data.table=F)
+    #'/raid6/Ron/prs/data/bert_sample/CEU.TRN.PHENO1.glm.logistic.hybrid'
+    COR[,anc]=p2cor(p = glm$P, n = gwasN[[anc]], sign=log(glm$OR))
+
+        }
   rownames(COR)=COR$ID
   print(head(COR))
+  # head(COR)
+  # 
   # > head(COR)
-  # CHR           ID         CEU         YRI
-  # 5350016  20 20:80457:C:T  0.01006106 -0.01018116
-  # 5350017  20 20:81154:T:G -0.01517010  0.01512512
-  # 5350018  20 20:82590:T:G  0.01196787  0.01373924
-  # 5350019  20 20:82603:A:C -0.01182462 -0.01355234
-  # 5350020  20 20:83158:C:T  0.01517010 -0.01229402
-  # 5350021  20 20:85259:G:A -0.01006106 -0.01048339
+  # CHR            ID          CEU          YRI
+  # 1:1962845:T:C   1 1:1962845:T:C -0.008296110 0.0073444745
+  # 1:1962899:A:C   1 1:1962899:A:C  0.013275142 0.0086428250
+  # 1:1963406:G:A   1 1:1963406:G:A -0.006433539 0.0007753638
+  # 1:1963538:T:C   1 1:1963538:T:C  0.004405373 0.0137580552
+  # 1:1963738:C:T   1 1:1963738:C:T -0.006433539 0.0007753638
+  # 1:1964101:A:G   1 1:1964101:A:G -0.006433539 0.0007753638
   
   # load the LD block information
   LDblocks=list()
@@ -201,40 +189,79 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
   # run lassosum
   print(CHR); flush.console()
   
-  system.time(re.chr<-mclapply(CHR,mylassosumFunction,gamma=gamma,lambda=lambda,shrink=shrink,mem.limit = mem.limit,gwasANC = gwasANC,COR=COR,referenceFiles = referenceFiles,LDblocks = LDblocks,
-                               mc.cores = mc.cores,mc.preschedule = F))
+  system.time(
+    re.chr<-mclapply(CHR, mylassosumFunction,
+                     gamma=gamma,lambda=lambda,
+                     shrink=shrink,mem.limit = mem.limit,
+                     gwasANC = gwasANC,COR=COR,
+                     referenceFiles = referenceFiles,
+                     LDblocks = LDblocks,
+                     mc.cores = mc.cores,mc.preschedule = F)
+  )
   print('loss in combined lassosum')
-  print(re.chr[[1]]$loss)
-  print(re.chr[[1]]$trainerror1)
-  print(re.chr[[1]]$trainerror2)
+  print(re.chr$loss)
+  print(re.chr$trainerror1)
+  print(re.chr$trainerror2)
   
-  save(re.chr, file = '/raid6/Tianyu/PRS/trash/re_chr.RData')
   # merge the results from the 22 chromosomes
   re.lasso = merge.mylassosum(re.chr)
   print('loss in combined lassosum, after merging')
   print(re.lasso$loss)
   print(re.lasso$trainerror1)
   print(re.lasso$trainerror2)
-  
   # save ther results
-  # dir.create(paste0(main.dir,"CombinedLassoSum/Tmp/"),showWarnings = F,recursive = T)
-  # when training the original data
-  # save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),".Rdata",sep=""))
-  # training the bootstrap data
-  
-  # save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot", b,".Rdata",sep=""))
-  
-  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot_",setting.title,"_", b,".Rdata",sep=""))
+  dir.create(paste0(main.dir,"CombinedLassoSum/Tmp/"),showWarnings = F,recursive = T)
+  save(re.lasso,file=paste(main.dir,"CombinedLassoSum/Tmp/GWAS-lasso-C",gwasN$CEU,"-Y",gwasN$YRI,sprintf("-gamma-%.2f",gamma),"_boot_",setting.title,".Rdata",sep=""))
   return(i.combn)
 }
 # end of the wrapper function
-B <- 1
-for(b in 1:B){
-  system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction, b = b, input.df=input.df,
-                                   gwasANC = gwasANC, lambda=lambda, shrink=shrink,
-                                   main.dir=main.dir,work.dir=work.dir, CHR= 20:21, mem.limit=2e10,
-                                   mc.cores=16,mc.preschedule = F, mc.silent=F))
-}
+
+setting.title <- 'debug1'
+    
+##### general setup
+i.sim="NC8000"
+# load(paste0("Work/Sim-C0.80-Y0.60-rep",i.sim,"/simulation-params.RData"))
+load("/raid6/Ron/prs/data/bert_sample/simulation-params.RData")
+
+# set directories for this simulation
+# main.dir=params$run.info$main.dir
+# work.dir=params$run.info$work.dir
+
+main.dir <- "/raid6/Tianyu/PRS/"
+work.dir <- "/raid6/Ron/prs/data/bert_sample/"
+
+### ancestries
+gwasANC=c("CEU","YRI")
+#### set the parameters
+GAMMA=0.5
+###!!!!!
+lambda=exp(seq(log(0.0025), log(0.025), length.out=10))
+lambda[1] <- 0.00025
+
+
+# lambda=exp(seq(log(0.007), log(0.05), length.out=10))  ##try larger lambda
+
+# lambda=exp(seq(log(0.001), log(0.025), length.out=10))
+shrink=.9
+
+###!!!!this is not correct
+N=seq(20000,20000,4000)
+input.df=data.frame(N1=rep(N,each=length(N)),N2=rep(N,length(N)))
+input.df=data.frame(gamma=rep(GAMMA,each=nrow(input.df)),N1=rep(input.df$N1,length(GAMMA)),N2=rep(input.df$N2,length(GAMMA)))
+
+###this is the correct sample size
+input.df <- data.frame(gamma = GAMMA, N1 = 20000, N2 = 4000)
+# memory limit
+mem.limit=2*10e9
+
+
+system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction, 
+                                 setting.title = setting.title,
+                                 input.df=input.df,
+                                 gwasANC = gwasANC, lambda=lambda, shrink=shrink,
+                                 main.dir=main.dir,work.dir=work.dir,CHR= 20:21,mem.limit=2e10,
+                                 mc.cores=20,mc.preschedule = F, mc.silent=F))
+
 #####print the above variables
 # > input.df
 # gamma    N1    N2
@@ -244,3 +271,7 @@ for(b in 1:B){
 # > lambda
 # [1] 0.001000000 0.001429969 0.002044812 0.002924018 0.004181255 0.005979066
 # [7] 0.008549880 0.012226064 0.017482895 0.025000000
+
+
+
+

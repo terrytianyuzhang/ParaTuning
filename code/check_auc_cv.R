@@ -3,6 +3,7 @@ set.seed(2019)
 rm(list=ls()); gc()
 options(stringsAsFactors = F)
 
+print('check AUC for CV data')
 setting.title <- 'CEUa1YRIa2CV'
 # #### software needed
 # plink <- "/usr/local/bin/plink"
@@ -53,7 +54,7 @@ lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y
 
 ####now we load the beta0
 load(lasso.file)
-beta=re.lasso$beta
+beta <- re.lasso$beta
 shrink <- re.lasso$shrink 
 lambda <- re.lasso$lambda
 
@@ -77,6 +78,41 @@ CHR=gsub("chr","",map$CHROM)
 ####!!!!!!!!!!
 # SNP=map$ID
 SNP <- map[CHR %in% 20:21, ]$ID
+
+PGS_bychr_bootstrap <- function(chr, anc, beta){
+  
+  ######next step is generating some risk score using reference genotype
+  ######we can download these genotype from 1000 Genome Project
+  ######for the purpose of thee paper I will just use the reference panel 
+  ######from which the training samples are generated
+  
+  chr_loc <- as.numeric(gsub(':.*$','',rownames(beta)))
+  snp <- rownames(beta)[chr_loc == chr]
+  
+  ####load genotype data without label
+  
+  system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bed"),
+                              bim=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bim"),
+                              fam=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.fam"),
+                              select.snps = snp)
+                                )
+  #example : "/raid6/Tianyu/PRS/bert_sample/YRI.TUNE/CHR/YRI.TUNE-chr20.bed"
+  
+  # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
+  system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
+  
+  # center the columns
+  system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
+  # normalize the calls to the unit 1 norm
+  system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
+  
+  # apply the proper shrinkage
+  # system.time(gnt<-gnt*sqrt(1-shrink))
+  
+  # calculate the pgs
+  system.time(re.pgs<-gnt%*%beta[chr_loc == chr,])
+  return(re.pgs)
+}
 
 # i.set <- 1
 for(i.set in 1:2){
@@ -106,77 +142,99 @@ pheno <- booty[val.index]
 PGSnPHENO <- matrix(0, ncol = length(lambda) + 1, nrow = length(pheno))
 PGSnPHENO[,length(lambda) + 1 ] <- pheno
 
-PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
-  
-  ######next step is generating some risk score using reference genotype
-  ######we can download these genotype from 1000 Genome Project
-  ######for the purpose of thee paper I will just use the reference panel 
-  ######from which the training samples are generated
-  
-  chr_loc <- as.numeric(gsub(':.*$','',names(beta0)))
-  snp <- names(beta0)[chr_loc == chr]
-  
-  ####load genotype data without label
-  print('load')
-  system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bed"),
-                              bim=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bim"),
-                              fam=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.fam"),
-                              select.snps = snp)
-  )
-  print('finished loading')
-  # system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
-  #                             bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
-  #                             fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
-  #                             select.snps = snp)
-  # )
-  gnt_map <- gnt$map
-  # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
-  system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
-  
-  # center the columns
-  system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
-  # normalize the calls to the unit 1 norm
-  system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
-  
-  # apply the proper shrinkage
-  # system.time(gnt<-gnt*sqrt(1-shrink))
-  
-  # calculate the pgs
-  system.time(re.pgs<-gnt%*%beta0[chr_loc == chr])
-  return(re.pgs)
+rownames(beta) <- SNP
+chrs <- 20:21 
+
+re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc, 
+                    beta = beta)
+
+### sum the results
+pgs <- re.pgss[[1]] #this is the first chromosome
+for(i in 2:length(re.pgss)){
+  pgs <- pgs+re.pgss[[i]]
 }
+PGSnPHENO[,1:length(lambda)] <- pgs
+###pgs is the risk score for each subject in the reference panel
+save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_',anc))
+}
+# delete from here
+# 
+# PGS_bychr_bootstrap <- function(chr, anc, beta0, shrink){
+#   
+#   ######next step is generating some risk score using reference genotype
+#   ######we can download these genotype from 1000 Genome Project
+#   ######for the purpose of thee paper I will just use the reference panel 
+#   ######from which the training samples are generated
+#   
+#   chr_loc <- as.numeric(gsub(':.*$','',names(beta0)))
+#   snp <- names(beta0)[chr_loc == chr]
+#   
+#   ####load genotype data without label
+#   print('load')
+#   system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bed"),
+#                               bim=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.bim"),
+#                               fam=paste0("/raid6/Tianyu/PRS/BootData/", anc,".TUNE/CHR/",anc,".TUNE-chr",chr, "boost-val.fam"),
+#                               select.snps = snp)
+#   )
+#   print('finished loading')
+#   # system.time(gnt<-read.plink(bed=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bed"),
+#   #                             bim=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".bim"),
+#   #                             fam=paste0("/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr, ".fam"),
+#   #                             select.snps = snp)
+#   # )
+#   gnt_map <- gnt$map
+#   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
+#   system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
+#   
+#   # center the columns
+#   system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
+#   # normalize the calls to the unit 1 norm
+#   system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
+#   
+#   # apply the proper shrinkage
+#   # system.time(gnt<-gnt*sqrt(1-shrink))
+#   
+#   # calculate the pgs
+#   system.time(re.pgs<-gnt%*%beta0[chr_loc == chr])
+#   return(re.pgs)
+# }
+# 
+# for(m in 1:length(lambda)){
+#   print(m)
+#   beta0 <- beta[,m] #use the second smallest lambda to generate bootstrap data
+#   
+#   names(beta0) <- SNP
+#   
+#   chrs <- 20:21 #which chromosome did i use when training the model
+# 
+# 
+#   
+#   re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc, 
+#                       beta0 = beta0, shrink = shrink)
+#   
+#   ### sum the results
+#   pgs <- re.pgss[[1]] #this is the first chromosome
+#   for(i in 2:length(re.pgss)){
+#     pgs <- pgs+re.pgss[[i]]
+#   }
+#   PGSnPHENO[,m] <- pgs
+#   ###pgs is the risk score for each subject in the reference panel
+#   save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
+#   
+# }  
+# 
+# save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
+# }#i.set
 
-for(m in 1:length(lambda)){
-  print(m)
-  beta0 <- beta[,m] #use the second smallest lambda to generate bootstrap data
-  
-  names(beta0) <- SNP
-  
-  chrs <- 20:21 #which chromosome did i use when training the model
+###delete to here
 
 
-  
-  re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc, 
-                      beta0 = beta0, shrink = shrink)
-  
-  ### sum the results
-  pgs <- re.pgss[[1]] #this is the first chromosome
-  for(i in 2:length(re.pgss)){
-    pgs <- pgs+re.pgss[[i]]
-  }
-  PGSnPHENO[,m] <- pgs
-  ###pgs is the risk score for each subject in the reference panel
-  save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
-  
-}  
-
-save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc))
-}#i.set
 #######load the PGS score and phenotype information, then calculate ROC
 library(data.table)
 library(pROC)
+setting.title <- 'CEUa1YRIa2CV'
 anc <- 'CEU'
-PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc)))
+PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_',anc)))
 
 nlambda <- NCOL(PGSnPHENO) - 1
 PGSnPHENO[PGSnPHENO[,nlambda + 1] >0, nlambda + 1] <- 0.5
@@ -185,10 +243,10 @@ aucs <- rep(0, nlambda)
 for(i in 1:nlambda){
   aucs[i] <- auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i])
 }
-save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_auc_',anc, '.RData'))
+save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_auc_',anc, '.RData'))
 
 anc <- 'YRI'
-PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_',anc)))
+PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_',anc)))
 
 nlambda <- NCOL(PGSnPHENO) - 1
 PGSnPHENO[PGSnPHENO[,nlambda + 1] >0, nlambda + 1] <- 0.5
@@ -197,7 +255,7 @@ aucs <- rep(0, nlambda)
 for(i in 1:nlambda){
   aucs[i] <- auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i])
 }
-save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/PGSnPHENO_auc_',anc, '.RData'))
+save(aucs, file = paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_auc_',anc, '.RData'))
 
 
 
