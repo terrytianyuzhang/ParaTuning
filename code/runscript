@@ -1,0 +1,16 @@
+# Rscript tianyu-combined-lassosum-training.R > /raid6/Tianyu/PRS/trash/log.txt
+# Rscript combined-lassosum-boot-training.R > /raid6/Tianyu/PRS/trash/log.txt
+# Rscript debug_1.R > /raid6/Tianyu/PRS/trash/debug1-log.txt
+# Rscript generate-cv-data-calib.R > /raid6/Tianyu/PRS/trash/generate-cv-data-calib-log.txt
+# Rscript combined-lassosum-cv-training.R > /raid6/Tianyu/PRS/trash/combined-lassosum-cv-training-log.txt
+# Rscript combined-lassosum-debug-training.R > /raid6/Tianyu/PRS/trash/combined-lassosum-debug-training-log.txt
+# Rscript check_auc_cv.R > /raid6/Tianyu/PRS/trash/check_auc_cv-log.txt
+# Rscript iterative_find_a.R > /raid6/Tianyu/PRS/trash/iterative_find_a_log.txt
+# Rscript combined-lassosum-find-a.R > /raid6/Tianyu/PRS/trash/combined-lassosum-find-a-log.txt
+# Rscript generate-boot-data.R > /raid6/Tianyu/PRS/trash/log.txt
+Rscript scaleup-org-training.R > /raid6/Tianyu/PRS/trash/scaleup-org-training-log.txt
+Rscript scaleup-generate-cv.R > /raid6/Tianyu/PRS/trash/scaleup-generate-cv-log.txt
+Rscript scaleup-cv-training.R > /raid6/Tianyu/PRS/trash/scaleup-cv-training-log.txt
+Rscript scaleup-check-auc.R > /raid6/Tianyu/PRS/trash/scaleup-check-auc-log.txt
+Rscript scaleup-check-auc-cv.R > /raid6/Tianyu/PRS/trash/scaleup-check-auc-cv-log.txt
+
