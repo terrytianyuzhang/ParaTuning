@@ -208,7 +208,6 @@ wrapperFunction <- function(i.combn, b , input.df, gwasANC, lambda, shrink, main
   print(re.chr[[1]]$trainerror1)
   print(re.chr[[1]]$trainerror2)
   
-  save(re.chr, file = '/raid6/Tianyu/PRS/trash/re_chr.RData')
   # merge the results from the 22 chromosomes
   re.lasso = merge.mylassosum(re.chr)
   print('loss in combined lassosum, after merging')

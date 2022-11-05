@@ -85,7 +85,7 @@ SNP <- map[CHR %in% 1:22, ]$ID
 # trn.set=work.df$trn.set[i.set]
 # trn.n=work.df$trn.n[i.set]
 PGS_bychr_bootstrap <- function(chr, anc, beta){
-  
+  print(paste0('claculating PGS of ',anc, 'using chr ', chr))
   ######next step is generating some risk score using reference genotype
   ######we can download these genotype from 1000 Genome Project
   ######for the purpose of thee paper I will just use the reference panel 
@@ -116,6 +116,8 @@ PGS_bychr_bootstrap <- function(chr, anc, beta){
   
   # calculate the pgs
   system.time(re.pgs<-gnt%*%beta[chr_loc == chr,])
+  print(paste0('finished claculating PGS of ',anc, 'using chr ', chr))
+  
   return(re.pgs)
 }
 
@@ -132,7 +134,7 @@ for(i.set in 1:2){
   chrs <- 1:22 
   
   re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc, 
-                      beta = beta, mc.cores = 22)
+                      beta = beta, mc.cores = 4)
   
   ### sum the results
   pgs <- re.pgss[[1]] #this is the first chromosome
