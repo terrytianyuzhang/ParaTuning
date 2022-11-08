@@ -1,4 +1,4 @@
-setting.title <- 'CEU1aYRI2a10Chr'
+setting.title <- 'CEU0aYRI0a22Chr_lambda7'
 results <- data.frame()
 
 anc <- "CEU"
@@ -17,6 +17,7 @@ temp.results <- data.frame(lambda.index = 1:10,
                            setting = rep("cv", length(auc)))
 results <- rbind(results, temp.results)
 
+setting.title <- 'CEU1aYRI2a22Chr'
 anc <- "CEU"
 auc <- get(load(paste0('/Users/tianyu/Documents/ParaTuning/data/',setting.title,'PGSnPHENO_org_auc_CEU.RData')))
 temp.results <- data.frame(lambda.index = 1:10,

@@ -4,7 +4,7 @@ rm(list=ls()); gc()
 options(stringsAsFactors = F)
 
 print('check AUC for CV data')
-setting.title <- 'CEU1aYRI2a22Chr'
+setting.title <- 'CEU0aYRI0a22Chr_lambda3'
 # #### software needed
 # plink <- "/usr/local/bin/plink"
 # plink2 <- "/usr/local/bin/plink2"
@@ -235,7 +235,7 @@ save(PGSnPHENO, file = paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHEN
 #######load the PGS score and phenotype information, then calculate ROC
 library(data.table)
 library(pROC)
-setting.title <- 'CEU1aYRI2a22Chr'
+setting.title <- 'CEU0aYRI0a22Chr_lambda3'
 anc <- 'CEU'
 PGSnPHENO <- get(load(paste0('/raid6/Tianyu/PRS/trash/',setting.title,'PGSnPHENO_',anc)))
 
