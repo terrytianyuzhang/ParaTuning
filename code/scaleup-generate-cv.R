@@ -19,7 +19,7 @@ library(R.utils)
 library(snpStats)
 library(wordspace)
 
-setting.title <- 'CEU0aYRI0a22Chr_lambda3'
+setting.title <- 'CEU0aYRI0a22Chr_lambda2'
 print(setting.title)
 chrs <- 1:22 #which chromosome did i use when training the model
 
@@ -32,7 +32,7 @@ re.lasso <- get(load(lasso.file))
 beta <- re.lasso$beta
 # beta0.index <- ceiling(NCOL(beta)/2)
 beta0.index <- 7 #this is for CEU1aYRI2a22Chr
-beta0.index <- 3 #this is for CEU1aYRI2a22Chr_lambda3
+beta0.index <- 2 #this is for CEU1aYRI2a22Chr_lambda2
 beta0 <- beta[, beta0.index] #use a small lambda to generate bootstrap data
 ##########read in genotype and calculate score#############
 map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map',header=T,data.table=F)[,c("CHROM","ID")]
