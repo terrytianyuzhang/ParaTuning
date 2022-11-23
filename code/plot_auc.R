@@ -1,4 +1,4 @@
-setting.title <- 'CEU0aYRI0a22Chr_lambda2'
+setting.title <- 'CEU0aYRI0a22Chr_lambda7'
 results <- data.frame()
 
 anc <- "CEU"

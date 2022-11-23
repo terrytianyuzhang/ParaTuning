@@ -34,7 +34,7 @@ val.index <- which.min(test.errs)
 
 #####match the training errors
 train.n <- length(train.index)
-chosen.index <- 9
+chosen.index <- 1
 x.2nd <- mvrnorm(n, mu = rep(0, p), Sigma = diag(1,p))
 
 beta.2nd <- glmnet.fit$beta[,chosen.index]
@@ -43,7 +43,7 @@ risk.score.2nd <- x.2nd %*% beta.2nd
 
 
 ###generate y
-y.2nd <- risk.score.2nd + rnorm(n = n, mean = 0, sd = 2)
+y.2nd <- risk.score.2nd + rnorm(n = n, mean = 0, sd = 3.2)
 
 glmnet.fit.2nd <- glmnet(x = x.2nd[train.index,], 
                          y = y.2nd[train.index],
