@@ -8,10 +8,17 @@ library(R.utils)
 
 # this version uses the heritability and the underlying normal to simulate the outcome
 
-#### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
+# #### software needed
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+# directory changes
+plink <- "/usr/local/bin/plink"
+plink2 <- "/usr/local/bin/plink2"
 
+# Bert has 32 cores
+# nodes <- 32
+# Try less on Kathryn's computer
+nodes <- 24 
 
 #### load the functions that are needed
 source("simulation-functions.R")
@@ -41,6 +48,9 @@ for(set in names(params)[-1]){
       system.time(tmp<-mclapply(params[[set]]$blocks,selectHaplotypes,n.sample=params[[set]]$n.sample,n.haplo=params[[set]]$n.haplo,mc.cores=50,mc.preschedule = T,mc.silent=T))
       tmp=cbind.data.frame(tmp)
       
+      ###
+      print("finished the 1st mclapply")
+      
       ####
       cc.haplotypes=cbind.data.frame(cc.haplotypes,tmp)
       rm(tmp); gc()
@@ -63,14 +73,20 @@ for(set in names(params)[-1]){
       tmp.dir=paste0(params$run.info$work.dir,set,"/GNT.contrib")
       dir.create(tmp.dir,recursive = T,showWarnings = F)
       
+      print("haplo.dir ir")
+      print(paste0(params$run.info$main.dir,"Tmp/",params[[set]]$ancestry,"_haplotypes/"))
       
       system.time(re.block<-mclapply(blocks,determineGeneticValues.ld.blocks.with.write.ref.alt,anc=params[[set]]$ancestry,sel.snp=params$run.info$sel.snp,cc.haplotypes=cc.haplotypes[,block.12],
                                      haplo.dir=paste0(params$run.info$main.dir,"Tmp/",params[[set]]$ancestry,"_haplotypes/"),tmp.dir=tmp.dir,
-                                     mc.cores=32,mc.preschedule = T,mc.silent=T))
+                                     mc.cores= nodes,mc.preschedule = T,mc.silent=T))
+      
+      ###
+      print("finished the 2nd mclapply")
+      
       # collect the genetic contributions
       gnt.contrib=rep(0,nrow(cc.haplotypes))
       for(block in blocks){
-        gnt.contrib=gnt.contrib+fread(paste0(tmp.dir,"/gnt.contrib-",block,".txt"),header=F,data.table=F,nThread=32)
+        gnt.contrib=gnt.contrib+fread(paste0(tmp.dir,"/gnt.contrib-",block,".txt"),header=F,data.table=F,nThread= nodes)
       }
       gnt.contrib=unlist(gnt.contrib)
       names(gnt.contrib)=cc.haplotypes$IID
@@ -114,6 +130,9 @@ for(set in names(params)[-1]){
     system.time(tmp<-mclapply(params[[set]]$blocks,selectHaplotypes,n.sample=params[[set]]$n.sample,n.haplo=params[[set]]$n.haplo,mc.cores=50,mc.preschedule = T,mc.silent=T))
     tmp=cbind.data.frame(tmp)
     
+    ###
+    print("finished the 3rd mclapply")
+    
     ####
     cc.haplotypes=cbind.data.frame(cc.haplotypes,tmp)
     rm(tmp); gc()
@@ -144,10 +163,12 @@ for(set in names(params)[-1]){
   dir.create(gnt.tmp.dir,showWarnings = F, recursive = T)
   
   
-  nodes=32 # seems to work best when writing intermediate files
+  nodes= nodes # seems to work best when writing intermediate files
   system.time(x<-mclapply(blocks,multiNodeGenotypeSimulation.ld.blocks,set=set,anc=params[[set]]$ancestry,selected.cc.haplotypes = selected.cc.haplotypes,
                           main.dir=params$run.info$main.dir,haplo.dir=haplo.dir,gnt.dir=gnt.tmp.dir,mc.cores=nodes,mc.preschedule=T,mc.silent=F))
   
+  ###
+  print("finished the 4th mclapply")
   
   ## combine all the pieces into one plink data file
   df=data.frame(files=list.files(paste(gnt.tmp.dir,sep=""),pattern = ".bed",full.names = T))

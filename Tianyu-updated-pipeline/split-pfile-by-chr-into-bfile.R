@@ -7,9 +7,12 @@ library(snpStats)
 library(R.utils)
 library(lassosum)
 
-#### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
+# #### software needed
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+# directory changes
+plink <- "/usr/local/bin/plink"
+plink2 <- "/usr/local/bin/plink2"
 
 #### load the parameters for the simulation
 load(paste0("Work/Sim-",i.sim,"/simulation-params.RData"))

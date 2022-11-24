@@ -6,10 +6,12 @@ library(doParallel)
 library(snpStats)
 library(R.utils)
 
-#### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
-
+# #### software needed
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+# directory changes
+plink <- "/usr/local/bin/plink"
+plink2 <- "/usr/local/bin/plink2"
 
 #### load the functions that are needed
 source("simulation-functions.R")
