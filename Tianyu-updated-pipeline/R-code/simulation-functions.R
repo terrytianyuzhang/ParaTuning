@@ -245,8 +245,7 @@ clumpingFunction<-function(chr,r2,set,set.dir,plink=plink){
   # create the directory
   dir.create(paste0(set.dir,"Clumping/"),showWarnings = F)
   # run clumping
-  plink.command=paste(plink,"--nonfounders","--allow-no-sex",
-                      "--threads",8,
+  plink.command=paste(plink,"--nonfounders","--allow-no-sex","--threads",32,
                       "--bfile",paste(set.dir,set,sep=""),
                       "--chr",chr,
                       "--clump-p1",1,
@@ -257,9 +256,8 @@ clumpingFunction<-function(chr,r2,set,set.dir,plink=plink){
                       "--clump-snp-field","ID",
                       "--clump-field","P",
                       "--out",paste0(set.dir,"Clumping/",set,"-chr",chr,sprintf("-r2_%2.1f",r2)),
-                      "--noweb",
                       sep=" ")
-  print(plink.command)
+  
   system(plink.command)
   return(chr)
   

@@ -7,8 +7,13 @@ library(snpStats)
 library(R.utils)
 
 #### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+# directory changes
+if(!exists("plink") | !exists("plink2")){
+  plink <- "/usr/local/bin/plink"
+  plink2 <- "/usr/local/bin/plink2"
+}
 
 
 #### load the functions that are needed
@@ -45,8 +50,10 @@ for(set in train.sets){
   r2.list=c(0.1,0.2,0.5,0.8)
   for(r2 in r2.list){
     print(r2); flush.console()
-    mclapply(chrs,clumpingFunction,r2=r2,set=set,set.dir=set.dir,plink=plink,mc.cores=22,mc.preschedule=F,mc.silent=T)
-  
+    
+    mclapply(chrs,clumpingFunction,r2=r2,set=set,set.dir=set.dir,plink=plink,mc.cores=8,mc.preschedule=F,mc.silent=T)
+    
+    
     clumps=NULL
     for(chr in chrs){
       clumps=rbind.data.frame(clumps,fread(paste0(set.dir,"Clumping/",set,"-chr",chr,sprintf("-r2_%2.1f",r2),".clumped"),header=T,data.table=F))

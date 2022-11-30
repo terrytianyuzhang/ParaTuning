@@ -8,9 +8,12 @@ library(R.utils)
 library(pROC)
 
 #### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
-
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+if(!exists("plink") | !exists("plink2")){
+  plink <- "/usr/local/bin/plink"
+  plink2 <- "/usr/local/bin/plink2"
+}
 
 #### load the functions that are needed
 source("simulation-functions.R")

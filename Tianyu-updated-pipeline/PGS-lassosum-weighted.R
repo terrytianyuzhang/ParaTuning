@@ -10,8 +10,12 @@ library(lassosum)
 library(pROC)
 
 #### software needed
-plink="/data3/Software/Plink/plink"
-plink2="/data3/Software/Plink2/plink2"
+# plink="/data3/Software/Plink/plink"
+# plink2="/data3/Software/Plink2/plink2"
+if(!exists("plink") | !exists("plink2")){
+  plink <- "/usr/local/bin/plink"
+  plink2 <- "/usr/local/bin/plink2"
+}
 
 #### load the functions that are needed
 source("simulation-functions.R")
@@ -78,6 +82,8 @@ for(tune.set in tune.sets){
 
 fwrite(re.wght,paste0(work.dir,"weighted-lassosum.wghts"),row.names=F,col.names=T,quote=F,sep="\t")
 print(re.wght)
+
+print('finished PGS-lassosum-weighted')
 
 rm.list=ls()
 rm.list=rm.list[!(rm.list %in% c("i.sim","sims"))]

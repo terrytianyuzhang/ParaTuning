@@ -39,47 +39,6 @@ sims <- 800 ##only consider one replicate
 #   source("run-gwas.R")
 # }
 
-# #the PT section is skipped for now because PLINK is too old
-# if(1){
-# # do pruning based on gwas results in the training populations
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-PT-pruning.R")
-# }
-# print('finished PT pruning')
-# 
-# 
-# # testing part
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-PT-testing.R")
-# }
-# 
-# print('finished PT testing')
-# 
-# 
-# # weighted-PT
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-PT-weighted.R")
-# }
-# 
-# print('finished PT-weighted')
-# 
-# }
-
-# # lassosum
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-lassosum-bestpara.R")
-# }
-# # 
-# # weighted lassosum
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-lassosum-weighted-bestpara.R")
-# }
-
 # fit joint lassosum
 for(i.sim in sims){
   print(i.sim)
