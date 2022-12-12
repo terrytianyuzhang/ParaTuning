@@ -18,9 +18,9 @@ if(!exists("plink") | !exists("plink2")){
 }
 
 # Bert has 32 cores
-# nodes <- 32
-# Try less on Kathryn's computer
-nodes <- 24 
+nodes <- 32
+# # Try less on Kathryn's computer
+# nodes <- 24
 
 #### load the functions that are needed
 source("simulation-functions.R")

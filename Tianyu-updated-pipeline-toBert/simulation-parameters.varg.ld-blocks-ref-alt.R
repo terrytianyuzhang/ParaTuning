@@ -40,9 +40,9 @@ if(!exists("plink") | !exists("plink2")){
 }
 
 # directories used, create the workdir if needed
-# main.dir="/data3/Bert/PengLiu/SimulationCode-Feb2022/"
+main.dir="/data3/Bert/PengLiu/SimulationCode-Feb2022/"
 # directory changes
-main.dir <- "/raid6/Tianyu/PRS/SimulationPipeline/"
+# main.dir <- "/raid6/Tianyu/PRS/SimulationPipeline/"
 work.dir=paste0(main.dir,"Work/Sim-",i.sim,"/")
 dir.create(work.dir,showWarnings = F, recursive = T)
 params$run.info$main.dir=main.dir

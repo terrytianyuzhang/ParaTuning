@@ -1,0 +1,1 @@
+Rscript master-simulation.R > /raid6/Tianyu/PRS/SimulationPipeline/Log/master-simulation.txt

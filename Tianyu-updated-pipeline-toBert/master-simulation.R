@@ -4,10 +4,15 @@ options(stringsAsFactors = F)
 # 700-709 h2=0.80 in CEU and 0.60 in YRI
 # 800-809 H2 approx 0.8, betas the same in both populations
 
-plink <- "/usr/local/bin/plink"
-plink2 <- "/usr/local/bin/plink2"
+##tianyu's plink location
+# plink <- "/usr/local/bin/plink"
+# plink2 <- "/usr/local/bin/plink2"
+
+##bert's plink
+plink <- "/data3/Software/Plink/plink"
+plink2 <- "/data3/Software/Plink2/plink2"
 # sims=800:809
-sims <- 802:803 ##only consider one replicate
+sims <- 800:809 ##only consider one replicate
 
 for(i.sim in sims){
   seed=sample(1e6,1)
@@ -17,7 +22,6 @@ for(i.sim in sims){
 }
 
 # simulate the populations
-# I changed the number of nodes
 for(i.sim in sims){
   print(i.sim)
   source("simulate_population_multinode.varg.ld-blocks-ref-alt.R")
