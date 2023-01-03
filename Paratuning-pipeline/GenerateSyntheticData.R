@@ -1,15 +1,25 @@
 ###########generate boostrap samples and split them into training and validation######
-set.seed(2019)
-print('generate bootstrap data for cv')
-rm(list=ls()); gc()
+
+# print('generate bootstrap data for cv')
+# rm(list=ls()); 
+gc()
 options(stringsAsFactors = F)
 
-#### software needed
-plink <- "/usr/local/bin/plink"
-plink2 <- "/usr/local/bin/plink2"
+if(!exists("plink") | !exists("plink2")){
+  plink <- "/usr/local/bin/plink"
+  plink2 <- "/usr/local/bin/plink2"
+}
 
-setwd("/home/tianyuz3/PRS/my_code")
-source("secondcom-hyperpara-tuning-function.R")
+if(!exists("i.sim")){
+  i.sim <- 800
+}
+
+
+# #### software needed
+# plink <- "/usr/local/bin/plink"
+# plink2 <- "/usr/local/bin/plink2"
+
+# setwd("/home/tianyuz3/PRS/my_code")
 
 library(data.table)
 library(pryr) # check memory useage
@@ -19,29 +29,44 @@ library(pROC) # for AUC
 library(R.utils)
 library(snpStats)
 library(wordspace)
+source("HyperparameterTuningFunctions.R")
 
-setting.title <- 'CEU0aYRI0a22Chr_lambda5'
-print(setting.title)
+
+# setting.title <- 'CEU0aYRI0a22Chr_lambda5'
+# print(setting.title)
 chrs <- 1:22 #which chromosome did i use when training the model
 
-nfold <- 5
+TrainTestNFold <- 5
+
+gammaGenerateData <- 0.8
+lambdaIndexGenerateData <- 5
+
+# load the parameters for this simulation
+load(paste0("/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-",i.sim,"/simulation-params.RData"))
+main.dir <- params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
+work.dir <- params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
+
 ##########read in lasso results##########
 # lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_", setting.title,".Rdata")
-lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_CEU1aYRI2a22Chr.Rdata")
+# lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_CEU1aYRI2a22Chr.Rdata")
+TrainJLFile <- paste0(work.dir, 
+                      'JointLassoSum/JointLassosum--gamma-', 
+                      sprintf("%.2f",gammaGenerateData), 
+                      '.Rdata')
+TrainJLResult <- get(load(TrainJLFile))
+AllBeta <- TrainJLResult$beta
 
-re.lasso <- get(load(lasso.file))
-beta <- re.lasso$beta
-
-beta0.index <- 5 #this is for CEU1aYRI2a22Chr_lambda2
-beta0 <- beta[, beta0.index] #use a small lambda to generate bootstrap data
+# beta0.index <- 5 #this is for CEU1aYRI2a22Chr_lambda2
+betaGenerateData <- AllBeta[, lambdaIndexGenerateData] #use a small lambda to generate bootstrap data
 ##########read in genotype and calculate score#############
-map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map',header=T,data.table=F)[,c("CHROM","ID")]
-
+# map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map',header=T,data.table=F)[,c("CHROM","ID")]
+map <- fread(paste0(main.dir,
+                    'Data/chr1-22-qc-frq-ld.block.map'))
 CHR <- gsub("chr","",map$CHROM)
 ####!!!!!!!!!!
 # SNP <- map[CHR %in% 1:22, ]$ID
 SNP <- map$ID
-names(beta0) <- SNP
+names(betaGenerateData) <- SNP
 
 ######SECTION 1: calculate PGS of the new individuals####
 risk.score.list <- vector("list",2)
@@ -49,7 +74,7 @@ ancs <- c('CEU', 'YRI')
 for(i.set in 1:2){
   anc <- ancs[i.set]
   re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc,
-                      beta0 = beta0, mc.cores = 8, mc.preschedule = FALSE)
+                      beta0 = betaGenerateData, mc.cores = 8, mc.preschedule = FALSE)
   ### sum the results
   pgs <- re.pgss[[1]] #this is the first chromosome
   for(i in 2:length(re.pgss)){
@@ -60,21 +85,35 @@ for(i.set in 1:2){
 
 }
 ### save risk scores for each population
-save(risk.score.list, file = paste0('/raid6/Tianyu/PRS/RiskScore/', setting.title,'riskscore.Rdata'))
+ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData")
+dir.create(ParameterTuningDirectory,
+           showWarnings = F,recursive = T)
+save(risk.score.list, file = paste0(ParameterTuningDirectory,
+                                    'riskscore.Rdata'))
 # ###pgs is the risk score for each subject in the reference panel
 #
 
 ######SECTION 2: generate simulated Y####
-risk.score.list <- get(load(paste0('/raid6/Tianyu/PRS/RiskScore/', setting.title,'riskscore.Rdata')))
+risk.score.list <- get(load(paste0(ParameterTuningDirectory,
+                                   'riskscore.Rdata')))
 #####we need to read figure out what is the original data noise level
 ancs <- c('CEU', 'YRI')
-s.sizes <- c(20000, 4000)
+CEUSampleSize <- params$CEU.TRN$n.case + params$CEU.TRN$n.control
+YRISampleSize <- params$YRI.TRN$n.case + params$YRI.TRN$n.control
+
+# s.sizes <- c(20000, 4000)
+s.sizes <- c(CEUSampleSize, YRISampleSize)
+caseProportion <- params$CEU.TRN$n.case / CEUSampleSize ###the case proportion is the same for both populations
+
+TrainGWASFile <- -1
+SyntheticYFile <- -1
+  
 for(i.set in 1:2){
   cv.generatey(anc = ancs[i.set], 
                s.size = s.sizes[i.set], 
-               beta0 = beta0, 
+               beta0 = betaGenerateData, 
                risk.score = risk.score.list[[i.set]], 
-               case.prop = 0.5)
+               case.prop = caseProportion)
 }
 
 print('generated booty')
@@ -83,9 +122,9 @@ print('generated booty')
 ###### 1/(nfold) left out for validation ####
 ##########split training and validation########
 set.seed(2019)
-chrs <- 1:22
-ancs <- c('CEU', 'YRI')
-s.sizes <- c(20000, 4000)
+# chrs <- 1:22
+# ancs <- c('CEU', 'YRI')
+# s.sizes <- c(20000, 4000)
 
 for(i.set in 1:2){
   anc <- ancs[i.set]
@@ -102,7 +141,7 @@ for(i.set in 1:2){
   boost.data.val.index.R <- paste0(boost.data.folder, "/boost-val-index.RData")
   
   
-  val.index <- sort(sample(1:s.size, floor(s.size/nfold)))
+  val.index <- sort(sample(1:s.size, floor(s.size/TrainTestNFold)))
   # save(val.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/", setting.title,"val_index.RData"))
   save(val.index, file = boost.data.val.index.R)
   

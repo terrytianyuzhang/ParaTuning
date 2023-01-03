@@ -57,8 +57,8 @@ mylassosum <- function(cor1, cor2,  fileName1, fileName2,
       re.lassosum=merge.mylassosum(results.list)
 #      return(do.call("merge.mylassosum", results.list))
       return(re.lassosum)
-    }
-  }
+    }## n.chunks > 1
+  }##chunk == T
   
   if(!is.null(parsed1$extract) & length(parsed1$extract) == length(cor1)) cor1=cor1[parsed1$extract]
   if(!is.null(parsed2$extract) & length(parsed2$extract) == length(cor2)) cor2=cor2[parsed2$extract]

@@ -172,7 +172,7 @@ wrapperFunction <- function(i.combn, input.df, gwasANC, lambda, shrink, main.dir
     for(anc in gwasANC){
       # referenceFiles[[chr]][[anc]]=paste0("/data3/DownLoadedData/GWAS-Populations-SimulationInput/",anc,"_reference_LDblocks/CHR/",anc,"-chr",chr)
       referenceFiles[[chr]][[anc]] <- paste0(main.dir,"Data/Reference-LDblocks/", anc,"/CHR/", anc,"-chr",chr)
-        # paste0(work.dir, "GWAS-Populations-SimulationInput/", anc, "_reference_LDblocks/CHR/", anc,"-chr",chr)
+      # paste0(work.dir, "GWAS-Populations-SimulationInput/", anc, "_reference_LDblocks/CHR/", anc,"-chr",chr)
     }
   }
   
@@ -239,7 +239,7 @@ gwasANC=c("CEU","YRI")
 #### set the parameters
 GAMMA = c(0.2, 0.5, 0.8)
 ###!!!!!
-lambda=exp(seq(log(0.0025), log(0.025), length.out=2))
+lambda=exp(seq(log(0.0025), log(0.025), length.out=10))
 # lambda[1] <- 0.00025
 # lambda=exp(seq(log(0.007), log(0.05), length.out=10))  ##try larger lambda
 
@@ -278,6 +278,8 @@ system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction,input.df=input
 # [1] 0.001000000 0.001429969 0.002044812 0.002924018 0.004181255 0.005979066
 # [7] 0.008549880 0.012226064 0.017482895 0.025000000
 
-
+rm.list=ls()
+rm.list=rm.list[!(rm.list %in% c("i.sim","sims", "plink", "plink2"))]
+rm(list = rm.list); flush.console()
 
 
