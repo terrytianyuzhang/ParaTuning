@@ -13,8 +13,6 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0){
   sub.beta0 <- beta0[chr_loc == chr & beta0 != 0] #subset relevant coordinates of beta
   snp <- names(sub.beta0)
   
-  print(head(snp))
-  print(head(sub.beta0))
   ####load genotype data without label
   if(anc == 'CEU'){
     file.title <- 'CEU-20K'
@@ -23,11 +21,11 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0){
   }
   
   ###this is the reference panel
-  system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr,".bed"),
+  gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr,".bed"),
                               bim=paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr,".bim"),
                               fam=paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr,".fam"),
                               select.snps = snp)
-  )
+  
   # system.time(gnt<-read.plink(bed=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bed"),
   #                             bim=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".bim"),
   #                             fam=paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"),
@@ -36,17 +34,18 @@ PGS_bychr_bootstrap <- function(chr, anc, beta0){
   #example : "/raid6/Tianyu/PRS/bert_sample/YRI.TUNE/CHR/YRI.TUNE-chr20.bed"
   
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
-  system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
+  gnt<- 2 - as(gnt$genotypes,Class="numeric")
   
-  print(gnt[1:5,1:5])
+  print(paste0("the size of chr ", chr, " genotype matrix is (GB)"))
+  print(object.size(gnt)/1e9)
   
   # center the columns
-  system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
+  gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt))
   # normalize the calls to the unit 1 norm
-  system.time(gnt<-normalize.cols(gnt,method="euclidean",p=2))
+  gnt<-normalize.cols(gnt,method="euclidean",p=2)
   
   # calculate the pgs
-  system.time(re.pgs<-gnt %*% sub.beta0)
+  re.pgs<-gnt %*% sub.beta0
   print(paste0("finish calculating PGS with chr", chr))
   
   return(re.pgs)
@@ -85,6 +84,8 @@ PGS_bychr_bootstrap_allbeta <- function(chr, anc, beta){
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
   system.time(gnt<- 2 - as(gnt$genotypes,Class="numeric"))
   
+  print(paste0("the size of chr ", chr, " genotype matrix is (GB)"))
+  print(object.size(gnt)/1e9)
   # center the columns
   system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
   # normalize the calls to the unit 1 norm
@@ -106,13 +107,15 @@ PGS_bychr_bootstrap_allbeta <- function(chr, anc, beta){
 ####Y = binomial(mu), mu = a*riskscore + case proportion
 ####need to estimate the calibration slope a (at least the scale should be correct).
 
-cv.generatey <- function(anc, s.size, beta0, risk.score, case.prop = 0.5, extra.scaling = 1){
+cv.generatey <- function(TrainGWASFile, SyntheticYFile,
+                         anc, s.size, beta0, risk.score, case.prop = 0.5, extra.scaling = 1){
   ###case.prop > 0.5 means there is more case than control 
   
   s2 <- sum(risk.score^2) #this is the (rescaled) variance of the risk scores
   
   ##load the original GWAS results
-  p.org <- fread(paste0('/raid6/Ron/prs/data/bert_sample/', anc,'.TRN.PHENO1.glm.logistic.hybrid'))
+  # p.org <- fread(paste0('/raid6/Ron/prs/data/bert_sample/', anc,'.TRN.PHENO1.glm.logistic.hybrid'))
+  p.org <- fread(TrainGWASFile)
   
   # names(p.org)[1] <- 'chr'
   # p.org <- p.org[chr %in% 1:22,]
@@ -135,12 +138,17 @@ cv.generatey <- function(anc, s.size, beta0, risk.score, case.prop = 0.5, extra.
   ###
   booty <- rbinom(s.size, 1, mu)
   
-  save(booty, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootY_',setting.title,'.RData'))
+  # save(booty, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootY_',setting.title,'.RData'))
+  save(booty, file = SyntheticYFile)
   ##"/raid6/Tianyu/PRS/BootData/CEU_bootY_calib.RData"
   
 }
 
-split.train.val <- function(chr, anc, train.index, val.index, plink){
+splitTrainValidation <- function(chr, anc, train.index, val.index, 
+                            ParameterTuningDirectory, 
+                            TrainSampleIndexFile,
+                            ValidationSampleIndexFile,
+                            plink){
   
   if(anc == 'CEU'){
     file.title <- 'CEU-20K'
@@ -150,12 +158,16 @@ split.train.val <- function(chr, anc, train.index, val.index, plink){
   
   ##this is the reference panel genotype data befpre splitting
   referece.panel.name <- paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr)
-  boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-  boost.data.train.index <- paste0(boost.data.folder, "/boost-train-index.txt")
-  boost.data.val.index <- paste0(boost.data.folder, "/boost-val-index.txt")
-  boost.data.train.data <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "boost-train")
-  boost.data.val.data <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "boost-val")
-  
+  # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
+  # boost.data.train.index <- paste0(boost.data.folder, "/boost-train-index.txt")
+  # boost.data.val.index <- paste0(boost.data.folder, "/boost-val-index.txt")
+  # TrainSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-train")
+  # ValidateSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-val")
+  # 
+  TrainSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
+                                  anc, "-chr", chr, "synthetic-train")
+  ValidateSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
+                                     anc, "-chr", chr, "synthetic-val")
   
   #complete panel information
   # full.fam <- fread(paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"))
@@ -165,27 +177,27 @@ split.train.val <- function(chr, anc, train.index, val.index, plink){
   #write down which are in the training set
   # fwrite(train.fam, paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/CHR/",anc,".TUNE-boost-train-index.txt"),
   #        col.names = F, sep = " ")
-  fwrite(train.fam, boost.data.train.index,
+  fwrite(train.fam, TrainSampleIndexFile,
          col.names = F, sep = " ")
   
   #split the reference panel into training and validation sets
   plink.command <- paste(plink, "--bfile", referece.panel.name,
                          "--allow-no-sex",
-                         "--keep", boost.data.train.index,
-                         "--make-bed", "--out", boost.data.train.data,
+                         "--keep", TrainSampleIndexFile,
+                         "--make-bed", "--out", TrainSampleDataPrefix,
                          "--noweb", "--keep-allele-order",
                          sep = " ")
   system(plink.command)
   
   val.fam <- full.fam[val.index, c(1,2)]
   #write down which are in the validation set
-  fwrite(val.fam, boost.data.val.index,
+  fwrite(val.fam, ValidationSampleIndexFile,
          col.names = F, sep = " ")
   
   plink.command <- paste(plink, "--bfile", referece.panel.name,
                          "--allow-no-sex",
-                         "--keep", boost.data.val.index,
-                         "--make-bed", "--out", boost.data.val.data,
+                         "--keep", ValidationSampleIndexFile,
+                         "--make-bed", "--out", ValidateSampleDataPrefix,
                          "--noweb", "--keep-allele-order",
                          sep = " ")
   system(plink.command)
@@ -193,8 +205,8 @@ split.train.val <- function(chr, anc, train.index, val.index, plink){
   print(paste0('finished sample splitting for chr ', chr))
 }
 
-cor_bychr_bootstrap <- function(chr, anc, boot.Y, B){
-  print(paste0('chr is', chr))
+PairwiseCorrelationSyntheticData <- function(chr, anc, SyntheticY, ParameterTuningDirectory){
+  print(paste0('chr is ', chr))
   ##calculate pairwise correlation
   
   # chr_loc <- as.numeric(gsub(':.*$','',names(beta0)))
@@ -206,18 +218,25 @@ cor_bychr_bootstrap <- function(chr, anc, boot.Y, B){
     file.title <- 'YRI-4K'  
   }
   
-  boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-  boost.data.train.data <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "boost-train")
-
-  ####load training genotype data 
-  system.time(gnt<-read.plink(bed=paste0(boost.data.train.data,".bed"),
-                              bim=paste0(boost.data.train.data,".bim"),
-                              fam=paste0(boost.data.train.data,".fam"))
+  # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
+  # boost.data.train.data <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "boost-train")
+  TrainSampleDataPrefix <- paste0(ParameterTuningDirectory, "/",
+                                  anc, "-chr", chr, "synthetic-train")
+  ####load training genotype data
+  system.time(gnt<-read.plink(bed=paste0(TrainSampleDataPrefix,".bed"),
+                              bim=paste0(TrainSampleDataPrefix,".bim"),
+                              fam=paste0(TrainSampleDataPrefix,".fam"))
   )
+  # system.time(gnt<-read.plink(bed=paste0(boost.data.train.data,".bed"),
+  #                             bim=paste0(boost.data.train.data,".bim"),
+  #                             fam=paste0(boost.data.train.data,".fam"))
+  # )
   
   # transform the genotypes to a matrix, and reverse the call count. This snpStats package counts the A2 allele, not the A1
   system.time(gnt<-2-as(gnt$genotypes,Class="numeric"))
   
+  print(paste0("the size of chr ", chr, " genotype matrix is (GB)"))
+  print(object.size(gnt)/1e9)
   # center the columns
   system.time(gnt <-gnt - rep(1, nrow(gnt)) %*% t(colMeans(gnt)))
   # normalize the calls to the unit 1 norm
@@ -225,29 +244,28 @@ cor_bychr_bootstrap <- function(chr, anc, boot.Y, B){
   
   ###calculate pairwise correlation
   print('calculating pairwise correlation')
-  print(paste0('B is ', B))
-  boot.cor <- matrix(0, nrow = NCOL(gnt), ncol = B)
-  for(i in 1:B){
-    print(paste0('the No.',i,'boostrap data of ', anc))
-    for(j in 1:NCOL(gnt)){
-      ###after the proper normalization, correlation is the same as inner product
-      boot.cor[j,i] <- crossprod(boot.Y[,i], gnt[,j] )
-    }
-  }
-  # save(boot.cor, file = '/raid6/Tianyu/PRS/trash/beta0is5-YRI-TRN-chr20-cor.RData')
+  SNP_number <- NCOL(gnt)
+  sample_size <- NROW(gnt)
   
+  
+  boot.cor <- matrix(0, nrow = SNP_number, ncol = 1)
+  for(j in 1:SNP_number){
+    ###after the proper normalization, correlation is the same as inner product
+    boot.cor[j,1] <- crossprod(SyntheticY[,1], gnt[,j] )
+  }
+  rm(gnt)
   #####make some "fake" GWAS results
   print('translate correlation into p-values')
-  fake_GWAS_list <- list()
-  sample_size <- NROW(gnt)
-  for(i in 1:B){
-    t_stat <- boot.cor[,i] * sqrt(sample_size - 2)/sqrt(1 - (boot.cor[,i])^2)
-    fake_GWAS <- data.frame(P = 2*pt(q = abs(t_stat), df = sample_size - 2, lower.tail = F), #two-sided p-value
-                            OR = 2*as.numeric(boot.cor[,i]>0) + 0.5*as.numeric(boot.cor[,i]<0))
-    fake_GWAS$n <- sample_size
-    fake_GWAS_list[[i]] <- fake_GWAS
-    # fwrite(fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i,'_chr',chr))
-  }
+  # SyntheticGWASOneChromosome <- list()
   
-  return(fake_GWAS_list)
+  # for(i in 1:B){
+  t_stat <- boot.cor[,1] * sqrt(sample_size - 2)/sqrt(1 - (boot.cor[,1])^2)
+  SyntheticGWASOneChromosome <- data.frame(P = 2*pt(q = abs(t_stat), 
+                                           df = sample_size - 2, lower.tail = F), #two-sided p-value
+                                           OR = 2*as.numeric(boot.cor[,1]>0) + 0.5*as.numeric(boot.cor[,1]<0))
+  SyntheticGWASOneChromosome$n <- sample_size
+  #   SyntheticGWASList[[i]] <- fake_GWAS
+  # }
+  
+  return(SyntheticGWASOneChromosome)
 }

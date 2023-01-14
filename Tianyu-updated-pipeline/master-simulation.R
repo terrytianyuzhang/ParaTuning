@@ -7,37 +7,38 @@ options(stringsAsFactors = F)
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"
 # sims=800:809
-sims <- 800:801 ##only consider one replicate
+sims <- 800:809 ##only consider one replicate
 
-# for(i.sim in sims){
-#   seed=sample(1e6,1)
-#   print(i.sim)
-#   # set up the parameters
-#   source("simulation-parameters.varg.ld-blocks-ref-alt.R")
-# }
-# 
-# # simulate the populations
-# # I changed the number of nodes
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("simulate_population_multinode.varg.ld-blocks-ref-alt.R")
-#   print(paste0("finished simulating population for ", i.sim))
-# }
-# 
-# 
-# # translate TUNE and TST into a bfile format and split by chromosome
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("split-pfile-by-chr-into-bfile.R")
-# }
-# 
-# 
-# 
-# #run gwas on the training populations
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("run-gwas.R")
-# }
+for(i.sim in sims){
+  seed=sample(1e6,1)
+  print(i.sim)
+  # set up the parameters
+  source("simulation-parameters.varg.ld-blocks-ref-alt.R")
+}
+
+# simulate the populations
+# I changed the number of nodes
+for(i.sim in sims){
+  print(i.sim)
+  source("simulate_population_multinode.varg.ld-blocks-ref-alt.R")
+  print(paste0("finished simulating population for ", i.sim))
+}
+
+
+# translate TUNE and TST into a bfile format and split by chromosome
+for(i.sim in sims){
+  print(i.sim)
+  source("split-pfile-by-chr-into-bfile.R")
+}
+
+
+
+#run gwas on the training populations
+for(i.sim in sims){
+  print(i.sim)
+  source("run-gwas.R")
+}
+
 # 
 # #the PT section is skipped for now because PLINK is too old
 # 
@@ -90,14 +91,14 @@ sims <- 800:801 ##only consider one replicate
 #   print(i.sim)
 #   source("PGS-JointLassosum-testing.R")
 # }
-
-library(devtools)
-install_github("terrytianyuzhang/TLPRS")
-
-for(i.sim in sims){
-  print(i.sim)
-  source("PGS-TL.R")
-}
+# 
+# library(devtools)
+# install_github("terrytianyuzhang/TLPRS")
+# 
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("PGS-TL.R")
+# }
 
 # if(1){
 # # multi lassosum, this runs all sims at the same time

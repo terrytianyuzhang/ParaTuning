@@ -1,20 +1,6 @@
 # rm(list=ls()); 
 gc()
 options(stringsAsFactors = F)
-#####I am trying to fit combined lassosum algorithm
-
-#########
-### The strategy to determine the combined lassosum is to use the architecture of the computer to determine the solutions
-### It works from the original Peng code without any modifications to increase the speed.
-### In this setting we do a grid search on 5 values of gamma and 5 for lambda
-### The code accepts multiple lambdas in pone run, but swill only use a single gamma
-### For each complete run we need to run the program, 5 times.
-### By calculating the lassosum by chromososome there is an additional level of parallelization that can be achieved.
-### After some experimentation I came to the conclusion that the quickest approach is to use 12 processors for the 22 chromosomes.
-### For this I used a memory limit per processor of 20Gb
-### This allows the smaller chromosomes to run on the same processor and be done at the same times the smaller ones.
-### A single run can then be completed in 20 minutes using 1+12 processors at a memory cost of ~260Gb. On our 2 Tb computer with 192 cores 
-### we can run 7 gammas simultaneously. I opted to use 5, to allow me some memory to do additional work.
 
 #### software needed
 # plink="/data3/Software/Plink/plink"

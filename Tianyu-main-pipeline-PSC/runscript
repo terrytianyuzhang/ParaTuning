@@ -1,0 +1,1 @@
+sbatch -t 24:00:00 -p EM --ntasks-per-node=24 SubmitPSCQueue.job

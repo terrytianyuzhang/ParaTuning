@@ -238,11 +238,11 @@ AUC.best.beta <- function(beta.can.file,
                     " --out ",stats_file,".test.PRS",
                     " --allow-no-sex")
       system(cmd)
-      print("0")
+
       temp=read.table(paste0(stats_file,".test.PRS.profile"),header=T)
-      print("2")
+      
       merged=merge(temp,Y_test,by=c("FID","IID"))
-      print("3")
+      
       best.auc <- auc(merged[,Y_name],merged$SCORESUM)
       print(best.auc)
     }##if best beta

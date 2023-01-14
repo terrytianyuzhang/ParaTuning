@@ -1,0 +1,10 @@
+Plink file directories in almost every file
+
+
+clumpingFunction in simulation-functions.R. There are several features not available
+number of nodes 32 -> 8 --> commented
+--clump-snp-field -- > commented
+PGS-PT-Pruning: mclapply(chrs,clumpingFunction,r2=r2,set=set,set.dir=set.dir,plink=plink,mc.cores= 22 -> 8,mc.preschedule=F,mc.silent=T)
+clumpingFunction: '--noweb'
+
+PGS-lassosum:makeCluster 32-> 24
