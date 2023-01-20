@@ -144,11 +144,17 @@ cv.generatey <- function(TrainGWASFile, SyntheticYFile,
   
 }
 
-splitTrainValidation <- function(chr, anc, train.index, val.index, 
+splitTrainValidation <- function(chr = NULL, anc, train.index, val.index, 
                             ParameterTuningDirectory, 
                             TrainSampleIndexFile,
                             ValidationSampleIndexFile,
                             plink){
+  
+  if(!is.null(chr)){
+    print(paste0('splitting train and validation for chr ', chr))
+  }else{
+    print(paste0('splitting train and validation for all the SNPs'))
+  }
   
   if(anc == 'CEU'){
     file.title <- 'CEU-20K'
@@ -156,53 +162,96 @@ splitTrainValidation <- function(chr, anc, train.index, val.index,
     file.title <- 'YRI-4K'  
   }
   
-  ##this is the reference panel genotype data befpre splitting
-  referece.panel.name <- paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr)
-  # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-  # boost.data.train.index <- paste0(boost.data.folder, "/boost-train-index.txt")
-  # boost.data.val.index <- paste0(boost.data.folder, "/boost-val-index.txt")
-  # TrainSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-train")
-  # ValidateSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-val")
-  # 
-  TrainSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
-                                  anc, "-chr", chr, "synthetic-train")
-  ValidateSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
-                                     anc, "-chr", chr, "synthetic-val")
-  
-  #complete panel information
-  # full.fam <- fread(paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"))
-  full.fam <- fread(paste0(referece.panel.name, ".fam"))
-  
-  train.fam <- full.fam[train.index, c(1,2)] #only keep family id and withtin family id
-  #write down which are in the training set
-  # fwrite(train.fam, paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/CHR/",anc,".TUNE-boost-train-index.txt"),
-  #        col.names = F, sep = " ")
-  fwrite(train.fam, TrainSampleIndexFile,
-         col.names = F, sep = " ")
-  
-  #split the reference panel into training and validation sets
-  plink.command <- paste(plink, "--bfile", referece.panel.name,
-                         "--allow-no-sex",
-                         "--keep", TrainSampleIndexFile,
-                         "--make-bed", "--out", TrainSampleDataPrefix,
-                         "--noweb", "--keep-allele-order",
-                         sep = " ")
-  system(plink.command)
-  
-  val.fam <- full.fam[val.index, c(1,2)]
-  #write down which are in the validation set
-  fwrite(val.fam, ValidationSampleIndexFile,
-         col.names = F, sep = " ")
-  
-  plink.command <- paste(plink, "--bfile", referece.panel.name,
-                         "--allow-no-sex",
-                         "--keep", ValidationSampleIndexFile,
-                         "--make-bed", "--out", ValidateSampleDataPrefix,
-                         "--noweb", "--keep-allele-order",
-                         sep = " ")
-  system(plink.command)
-  
-  print(paste0('finished sample splitting for chr ', chr))
+  if(!is.null(chr)){
+    ##this is the reference panel genotype data befpre splitting
+    referece.panel.name <- paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/CHR/",file.title,"-chr", chr)
+    # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
+    # boost.data.train.index <- paste0(boost.data.folder, "/boost-train-index.txt")
+    # boost.data.val.index <- paste0(boost.data.folder, "/boost-val-index.txt")
+    # TrainSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-train")
+    # ValidateSampleDataPrefix <- paste0(boost.data.folder, "/", file.title,"-chr", chr, "synthetic-val")
+    # 
+    dir.create(paste0(ParameterTuningDirectory, "/CHR/"),
+               showWarnings = F,recursive = T)
+    TrainSampleDataPrefix <- paste0(ParameterTuningDirectory, "/CHR/", 
+                                    anc, "-chr", chr, "synthetic-train")
+    ValidateSampleDataPrefix <- paste0(ParameterTuningDirectory, "/CHR/", 
+                                       anc, "-chr", chr, "synthetic-val")
+    
+    #complete panel information
+    # full.fam <- fread(paste0("/raid6/Tianyu/PRS/bert_sample/",anc,".TUNE/CHR/",anc,".TUNE-chr",chr,".fam"))
+    # full.fam <- fread(paste0(referece.panel.name, ".fam"))
+    
+    # train.fam <- full.fam[train.index, c(1,2)] #only keep family id and withtin family id
+    # #write down which are in the training set
+    # # fwrite(train.fam, paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/CHR/",anc,".TUNE-boost-train-index.txt"),
+    # #        col.names = F, sep = " ")
+    # fwrite(train.fam, TrainSampleIndexFile,
+    #        col.names = F, sep = " ")
+    
+    #split the reference panel into training and validation sets
+    plink.command <- paste(plink, "--bfile", referece.panel.name,
+                           "--allow-no-sex",
+                           "--keep", TrainSampleIndexFile,
+                           "--make-bed", "--out", TrainSampleDataPrefix,
+                           "--noweb", "--keep-allele-order",
+                           sep = " ")
+    system(plink.command)
+    
+    # val.fam <- full.fam[val.index, c(1,2)]
+    # #write down which are in the validation set
+    # fwrite(val.fam, ValidationSampleIndexFile,
+    #        col.names = F, sep = " ")
+    
+    plink.command <- paste(plink, "--bfile", referece.panel.name,
+                           "--allow-no-sex",
+                           "--keep", ValidationSampleIndexFile,
+                           "--make-bed", "--out", ValidateSampleDataPrefix,
+                           "--noweb", "--keep-allele-order",
+                           sep = " ")
+    system(plink.command)
+    
+    print(paste0('finished sample splitting for chr ', chr))
+  }else{
+    ##this is the reference panel genotype data befpre splitting
+    referece.panel.name <- paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/",file.title, "/", file.title)
+    
+    TrainSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
+                                    anc, "synthetic-train")
+    ValidateSampleDataPrefix <- paste0(ParameterTuningDirectory, "/", 
+                                       anc, "synthetic-val")
+    
+    #complete panel information
+    full.fam <- fread(paste0(referece.panel.name, ".psam"))
+    
+    train.fam <- full.fam[train.index, c(1,2)] #only keep family id and withtin family id
+    fwrite(train.fam, TrainSampleIndexFile,
+           col.names = F, sep = " ")
+    
+    #split the reference panel into training and validation sets
+    plink.command <- paste(plink, "--bfile", referece.panel.name,
+                           "--allow-no-sex",
+                           "--keep", TrainSampleIndexFile,
+                           "--make-bed", "--out", TrainSampleDataPrefix,
+                           "--noweb", "--keep-allele-order",
+                           sep = " ")
+    system(plink.command)
+    
+    val.fam <- full.fam[val.index, c(1,2)]
+    #write down which are in the validation set
+    fwrite(val.fam, ValidationSampleIndexFile,
+           col.names = F, sep = " ")
+    
+    plink.command <- paste(plink, "--bfile", referece.panel.name,
+                           "--allow-no-sex",
+                           "--keep", ValidationSampleIndexFile,
+                           "--make-bed", "--out", ValidateSampleDataPrefix,
+                           "--noweb", "--keep-allele-order",
+                           sep = " ")
+    system(plink.command)
+    
+    print(paste0('finished sample splitting for all the SNPs'))
+  }
 }
 
 PairwiseCorrelationSyntheticData <- function(chr, anc, SyntheticY, ParameterTuningDirectory){

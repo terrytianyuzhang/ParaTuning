@@ -5,21 +5,9 @@
 gc()
 options(stringsAsFactors = F)
 
-if(!exists("plink") | !exists("plink2")){
-  plink <- "/usr/local/bin/plink"
-  plink2 <- "/usr/local/bin/plink2"
-}
-
 if(!exists("i.sim")){
   i.sim <- 800
 }
-
-
-# #### software needed
-# plink <- "/usr/local/bin/plink"
-# plink2 <- "/usr/local/bin/plink2"
-
-# setwd("/home/tianyuz3/PRS/my_code")
 
 library(data.table)
 library(pryr) # check memory useage
@@ -30,7 +18,15 @@ library(R.utils)
 library(snpStats)
 library(wordspace)
 library(foreach)
+#####
 source("HyperparameterTuningFunctions.R")
+#####
+source("general_pipeline_parameters.R")
+print('the directory of the main pipeline is')
+print(main_simulation_pipeline_directory)
+
+print('the directory of the parameter tuning pipeline is')
+print(parameter_tuning_pipeline_directory)
 
 
 # setting.title <- 'CEU0aYRI0a22Chr_lambda5'
@@ -43,7 +39,7 @@ gammaGenerateData <- 0.8
 lambdaIndexGenerateData <- 5
 
 # load the parameters for this simulation
-load(paste0("/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-",i.sim,"/simulation-params.RData"))
+load(paste0(main_simulation_pipeline_directory, "Work/Sim-",i.sim,"/simulation-params.RData"))
 main.dir <- params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
 work.dir <- params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
 
@@ -107,20 +103,18 @@ YRISampleSize <- params$YRI.TRN$n.case + params$YRI.TRN$n.control
 s.sizes <- c(CEUSampleSize, YRISampleSize)
 caseProportion <- params$CEU.TRN$n.case / CEUSampleSize ###the case proportion is the same for both populations
 
-
-  
 for(i.set in 1:2){
   TrainGWASFile <- paste0(work.dir, ancs[i.set], '.TRN/Assoc/',
                           ancs[i.set],'.TRN.PHENO1.glm.logistic.hybrid')
-  SyntheticYFile <- paste0(ParameterTuningDirectory, '/', 
+  SyntheticYFile <- paste0(ParameterTuningDirectory, '/',
                            ancs[i.set],'-SyntheticY', '.RData')
-  
+
   cv.generatey(TrainGWASFile = TrainGWASFile,
                SyntheticYFile = SyntheticYFile,
-               anc = ancs[i.set], 
-               s.size = s.sizes[i.set], 
-               beta0 = betaGenerateData, 
-               risk.score = risk.score.list[[i.set]], 
+               anc = ancs[i.set],
+               s.size = s.sizes[i.set],
+               beta0 = betaGenerateData,
+               risk.score = risk.score.list[[i.set]],
                case.prop = caseProportion)
 }
 
@@ -130,7 +124,7 @@ print('generated booty')
 ###### 1/(nfold) left out for validation ####
 ##########split training and validation########
 set.seed(2019)
-# chrs <- 1:22
+# chrs <- 15
 # ancs <- c('CEU', 'YRI')
 # s.sizes <- c(20000, 4000)
 
@@ -138,11 +132,12 @@ for(i.set in 1:2){
   anc <- ancs[i.set]
   s.size <- s.sizes[i.set]
   
-  # if(anc == 'CEU'){
-  #   file.title <- 'CEU-20K'
-  # }else{
-  #   file.title <- 'YRI-4K'  
-  # }
+  if(anc == 'CEU'){
+    file.title <- 'CEU-20K'
+  }else{
+    file.title <- 'YRI-4K'
+  }
+  
   # 
   # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
   # boost.data.train.index.R <- paste0(boost.data.folder, "/boost-train-index.RData")
@@ -163,6 +158,22 @@ for(i.set in 1:2){
   save(val.index, file = ValidationSampleIndexRFile)
   save(train.index, file = TrainSampleIndexRFile)
   
+  ####
+  referece_panel_allSNP_name <- paste0("/raid6/Tianyu/PRS/bert_sample/ReferencePopulation-Package/", file.title,"/", file.title)
+  all_sample_psam <- fread(paste0(referece_panel_allSNP_name, ".psam"))
+  train_psam <- all_sample_psam[train.index, c(1,2)] #only keep family id and withtin family id
+  fwrite(train_psam, TrainSampleIndexFile, col.names = F, sep = " ")
+  val_psam <- all_sample_psam[val.index, c(1,2)]
+  fwrite(val_psam, ValidationSampleIndexFile, col.names = F, sep = " ")
+  
+  ##split all the SNPs
+  # splitTrainValidation(chr = NULL, 
+  #                      anc = anc,
+  #                      train.index = train.index, val.index = val.index,
+  #                      ParameterTuningDirectory = ParameterTuningDirectory,
+  #                      TrainSampleIndexFile = TrainSampleIndexFile,
+  #                      ValidationSampleIndexFile = ValidationSampleIndexFile,
+  #                      plink = plink)
   
   ####generate training and testing .fam files
   mclapply(chrs, splitTrainValidation, anc = anc,
@@ -170,114 +181,141 @@ for(i.set in 1:2){
           ParameterTuningDirectory = ParameterTuningDirectory,
           TrainSampleIndexFile = TrainSampleIndexFile,
           ValidationSampleIndexFile = ValidationSampleIndexFile,
-          plink = plink, mc.cores = 22, mc.preschedule = FALSE)
+          plink = plink, mc.cores = 16, mc.preschedule = FALSE)
+  print(paste(anc, 'is done splitting'))
 }
 
 print('finished sample splitting')
 
-######SECTION 4: calculate pairwise gene/simulated Y association####
-#########created simulated summary statistics########
-######
-# chrs <- 1:22
-# ancs <- c('CEU', 'YRI')
-# chrs <- 1:6
-for(i.set in 1:2){
-  anc <- ancs[i.set]
+######SECTION 4: perform GWAS######
+chrs <- 1:22
+ancs <- c('CEU', 'YRI')
+
+####
+
+dir.create(paste0(ParameterTuningDirectory, '/Assoc/'),
+           showWarnings = F,recursive = T)
+
+####
+
+for(population_index in 1:2){
+  ####
+  ancestry <- ancs[population_index]
   
-  if(anc == 'CEU'){
+  if(ancestry == 'CEU'){
     file.title <- 'CEU-20K'
   }else{
-    file.title <- 'YRI-4K'  
+    file.title <- 'YRI-4K'
   }
+  ####
   
-  # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-  # boost.data.train.index.R <- paste0(boost.data.folder, "/boost-train-index.RData")
-  TrainSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.Rdata")
+  TrainSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", 
+                                  ancestry, "-synthetic-train-index.Rdata")
   train.index <- get(load(TrainSampleIndexRFile))
   
-  SyntheticYFile <- paste0(ParameterTuningDirectory, '/', 
-                           anc,'-SyntheticY', '.RData')
+  ####
+  
+  SyntheticYFile <- paste0(ParameterTuningDirectory, '/',
+                           ancestry,'-SyntheticY', '.RData')
   SyntheticY <- get(load(SyntheticYFile))
-  SyntheticY <- SyntheticY[train.index] #only keep the training samples' Y
+  SyntheticY <- SyntheticY[train.index]
   
-  SyntheticY <- matrix(SyntheticY, ncol = 1)
-  SyntheticY <- SyntheticY - rep(1, nrow(SyntheticY)) %*% t(colMeans(SyntheticY))
-  SyntheticY <- normalize.cols(SyntheticY, method="euclidean",p=2)
+  ####
   
-  SyntheticGWAS <- mclapply(chrs, PairwiseCorrelationSyntheticData,
-                            ParameterTuningDirectory = ParameterTuningDirectory,
-                        anc = anc,
-                        SyntheticY = SyntheticY,
-                        mc.cores = 3, mc.preschedule = FALSE, mc.silent=F)
-  # chr = 22
-  # ParameterTuningDirectory = ParameterTuningDirectory
-  # anc = anc
-  # SyntheticY = SyntheticY
-  # cl <- parallel::makeCluster(22, type = 'FORK')
-  # 
-  # system.time(
-  #   SyntheticGWAS <- parallel::parLapplyLB(cl, chrs, PairwiseCorrelationSyntheticData,
-  #                         ParameterTuningDirectory = ParameterTuningDirectory,
-  #                         anc = anc,
-  #                         SyntheticY = SyntheticY))
-  # ##   user  system elapsed
-  # ##  0.004   0.009   3.511
-  # 
-  # parallel::stopCluster(cl)
-
-
-  # cl<-makeCluster(16, type = 'FORK')
-  # registerDoParallel(cl)
-  # 
-  # SyntheticGWASForeach <- foreach(chr = chrs)  %dopar%  {
-  #           PairwiseCorrelationSyntheticData(chr = chr,
-  #           ParameterTuningDirectory = ParameterTuningDirectory,
-  #           anc = anc,
-  #           SyntheticY = SyntheticY)
-  #           }
-  # stopCluster(cl)
-  
-  for(ChromosomeIndex in 1:length(chrs)){
-    if(ChromosomeIndex == 1){
-      SyntheticGWASCombined <- SyntheticGWAS[[ChromosomeIndex]]
-    }else{
-      SyntheticGWASCombined <- rbind(SyntheticGWASCombined, SyntheticGWAS[[ChromosomeIndex]])
-    }
+  for(chr in chrs){
+    
+    unlabeled_fam_file <- paste0(ParameterTuningDirectory,
+                                 "/CHR/", ancestry, 
+                                 "-chr", chr, "synthetic-train.fam")
+    unlabeled_fam <- fread(unlabeled_fam_file)
+    
+    unlabeled_fam$V6 <- SyntheticY + 1
+    fwrite(unlabeled_fam, file = unlabeled_fam_file, sep = ' ', col.names = FALSE)
+    
+    
+    ####
+    
+    
+    plink2.command=paste(plink2,"--nonfounders","--allow-no-sex",
+                         "--bfile", paste0(ParameterTuningDirectory, "/CHR/", 
+                                           ancestry,"-chr", chr,"synthetic-train"),
+                         "--glm","allow-no-covars","omit-ref",
+                         "--out", paste0(ParameterTuningDirectory, "/Assoc/", 
+                                         ancestry,"-chr", chr,"synthetic-train"),
+                         sep=" ")
+    system(plink2.command)
+    
   }
-  # fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i))
-  write.table(SyntheticGWASCombined, 
-         file = paste0(ParameterTuningDirectory,'/', anc,'-SyntheticGWAS'))
+  ####
   
-  # booty <- get(load(paste0("/raid6/Tianyu/PRS/BootData/",anc,"_bootY_",setting.title,".RData")))
-  # train.index <- get(load(boost.data.train.index.R))
-  # booty <- booty[train.index] #only use the training samples' Y
+  all_GWAS <- data.table()
+  for(chr in chrs){
+    one_chr_GWAS <- fread(paste0(ParameterTuningDirectory, 
+                               "/Assoc/", ancestry,"-chr", chr,
+                               "synthetic-train.PHENO1.glm.logistic.hybrid"),
+                        header = T)
+    all_GWAS <- rbind(all_GWAS, one_chr_GWAS)
+  }
   
-  # boot.Y <- matrix(booty, ncol = 1)
-  # # center and normalize the boostrap Y
-  # boot.Y <- boot.Y - rep(1, nrow(boot.Y)) %*% t(colMeans(boot.Y))
-  # 
-  # boot.Y <- normalize.cols(boot.Y, method="euclidean",p=2)
+  ####
+  fwrite(all_GWAS, paste0(ParameterTuningDirectory, 
+                          "/Assoc/", ancestry,"-",
+                          "synthetic-train.PHENO1.glm.logistic.hybrid"),
+         sep = ' ')
   
-  # fake_GWAS <- mclapply(chrs, cor_bychr_bootstrap, anc = anc, boot.Y = boot.Y, 
-  #                       B = B, mc.cores = 4, mc.preschedule = FALSE, mc.silent=F)
-  # ##the length of fake_GWAS = number of chromosome
-  # ##each component is a list, whose length = B, number of repeats
-  # 
-  # ###correctly merge the data and save it
-  # for(i in 1:B){
-  #   for(j in 1:length(chrs)){
-  #     if(j == 1){
-  #       one_fake_GWAS <- fake_GWAS[[j]][[i]]
-  #     }else{
-  #       one_fake_GWAS <- rbind(one_fake_GWAS, fake_GWAS[[j]][[i]])
-  #     }
-  #   }
-  #   # fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_repeat',i))
-  #   fwrite(one_fake_GWAS, file = paste0('/raid6/Tianyu/PRS/BootData/',anc,'_bootdata_',setting.title,'_repeat',i))
-  #   
-  # }
-}  
+}
 
-print('pairwise association calculation')
+
+
+
+# ######SECTION 4: calculate pairwise gene/simulated Y association####
+# #########created simulated summary statistics########
+# ######
+# # chrs <- 1:22
+# # ancs <- c('CEU', 'YRI')
+# # chrs <- 1:6
+# for(i.set in 1:2){
+#   anc <- ancs[i.set]
+# 
+#   if(anc == 'CEU'){
+#     file.title <- 'CEU-20K'
+#   }else{
+#     file.title <- 'YRI-4K'
+#   }
+# 
+#   # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
+#   # boost.data.train.index.R <- paste0(boost.data.folder, "/boost-train-index.RData")
+#   TrainSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.Rdata")
+#   train.index <- get(load(TrainSampleIndexRFile))
+# 
+#   ####
+#   SyntheticYFile <- paste0(ParameterTuningDirectory, '/',
+#                            anc,'-SyntheticY', '.RData')
+#   SyntheticY <- get(load(SyntheticYFile))
+#   SyntheticY <- SyntheticY[train.index] #only keep the training samples' Y
+#   SyntheticY <- matrix(SyntheticY, ncol = 1)
+#   SyntheticY <- SyntheticY - rep(1, nrow(SyntheticY)) %*% t(colMeans(SyntheticY))
+#   SyntheticY <- normalize.cols(SyntheticY, method="euclidean",p=2)
+# 
+#   ######
+#   SyntheticGWAS <- mclapply(chrs, PairwiseCorrelationSyntheticData,
+#                             ParameterTuningDirectory = ParameterTuningDirectory,
+#                             anc = anc,SyntheticY = SyntheticY,
+#                             mc.cores = 1, mc.preschedule = FALSE, mc.silent=F)
+# 
+#   for(ChromosomeIndex in 1:length(chrs)){
+#     if(ChromosomeIndex == 1){
+#       SyntheticGWASCombined <- SyntheticGWAS[[ChromosomeIndex]]
+#     }else{
+#       SyntheticGWASCombined <- rbind(SyntheticGWASCombined, SyntheticGWAS[[ChromosomeIndex]])
+#     }
+#   }
+# 
+#   write.table(SyntheticGWASCombined,
+#          file = paste0(ParameterTuningDirectory,'/', anc,'-SyntheticGWAS'))
+# 
+# }
+# 
+# print('pairwise association calculation')
 
 

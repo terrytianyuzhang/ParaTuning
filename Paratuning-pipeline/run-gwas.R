@@ -15,6 +15,10 @@ if(!exists("plink") | !exists("plink2")){
   plink2 <- "/usr/local/bin/plink2"
 }
 
+if(!exists("i.sim")){
+  i.sim <- 800
+}
+
 #### load the functions that are needed
 source("simulation-functions.R")
 
@@ -25,8 +29,12 @@ work.dir=params$run.info$work.dir
 
 train.sets=names(params)[grep(".TRN",names(params))]
 for(set in train.sets){
+  # > train.sets
+  # [1] "CEU.TRN" "YRI.TRN"
 
   set.dir=paste0(work.dir,set,"/")
+  # > set.dir
+  # [1] "/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/CEU.TRN/"
   dir.create(paste0(set.dir,"Assoc/"),showWarnings = F)
   
   plink2.command=paste(plink2,"--nonfounders","--allow-no-sex",
@@ -35,6 +43,11 @@ for(set in train.sets){
                        "--out",paste(set.dir,"Assoc/",set,sep=""),
                        sep=" ")
   system(plink2.command)
+  
+  # > paste(set.dir,set,sep="")
+  # [1] "/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/CEU.TRN/CEU.TRN"
+  # > paste(set.dir,"Assoc/",set,sep="")
+  # [1] "/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/CEU.TRN/Assoc/CEU.TRN"
   
 }
   

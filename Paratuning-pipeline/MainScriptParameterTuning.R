@@ -7,7 +7,7 @@ options(stringsAsFactors = F)
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"
 # sims=800:809
-sims <- 800:809 ##only consider one replicate
+sims <- 800:801 ##only consider one replicate
 
 # for(i.sim in sims){
 #   seed=sample(1e6,1)
@@ -18,26 +18,26 @@ sims <- 800:809 ##only consider one replicate
 
 # simulate the populations
 # I changed the number of nodes
-for(i.sim in sims){
-  print(i.sim)
-  source("simulate_population_multinode.varg.ld-blocks-ref-alt.R")
-  print(paste0("finished simulating population for ", i.sim))
-}
-
-
-# translate TUNE and TST into a bfile format and split by chromosome
-for(i.sim in sims){
-  print(i.sim)
-  source("split-pfile-by-chr-into-bfile.R")
-}
-
-
-
-#run gwas on the training populations
-for(i.sim in sims){
-  print(i.sim)
-  source("run-gwas.R")
-}
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("simulate_population_multinode.varg.ld-blocks-ref-alt.R")
+#   print(paste0("finished simulating population for ", i.sim))
+# }
+# 
+# 
+# # translate TUNE and TST into a bfile format and split by chromosome
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("split-pfile-by-chr-into-bfile.R")
+# }
+# 
+# 
+# 
+# #run gwas on the training populations
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("run-gwas.R")
+# }
 
 # # fit joint lassosum with real data
 # for(i.sim in sims){
@@ -51,11 +51,11 @@ for(i.sim in sims){
 #   source("PGS-JointLassosum-testing.R")
 # }
 # 
-# # generate synthetic data for parameter tuning
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("GenerateSyntheticData.R")
-# }
+# generate synthetic data for parameter tuning
+for(i.sim in sims){
+  print(i.sim)
+  source("GenerateSyntheticData.R")
+}
 # 
 # # fit joint lassosum with synthetic data
 # for(i.sim in sims){
