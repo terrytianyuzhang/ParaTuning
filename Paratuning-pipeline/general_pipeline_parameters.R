@@ -19,3 +19,8 @@ ld.populations=c("EUR.hg38","AFR.hg38"); names(ld.populations)=c("CEU","YRI")
 sample_sizes <- list()
 sample_sizes[["CEU"]]=data.frame(n.case=10000,n.control=10000)
 sample_sizes[["YRI"]]=data.frame(n.case=2000,n.control=2000)
+
+####method-specific parameters for joint lassosum
+GAMMA = c(0.2, 0.5, 0.8)
+lambda=exp(seq(log(0.0025), log(0.025), length.out=10)) 
+shrink=.9

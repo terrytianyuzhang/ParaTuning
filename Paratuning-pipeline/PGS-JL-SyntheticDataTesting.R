@@ -2,6 +2,15 @@
 gc()
 options(stringsAsFactors = F)
 
+if(!exists("plink") | !exists("plink2")){
+  plink <- "/usr/local/bin/plink"
+  plink2 <- "/usr/local/bin/plink2"
+}
+
+if(!exists("i.sim")){
+  i.sim <- 800
+}
+
 library(data.table)
 library(pryr) # check memory useage
 library(lassosum) #transform p value to correlation
@@ -11,7 +20,7 @@ library(R.utils)
 library(snpStats)
 library(wordspace)
 
-PGS_bychr_bootstrap <- function(chr, anc, beta, work.dir){
+PGS_bychr_bootstrap <- function(chr, anc, beta, work.dir, genotype_prefix_list){
   print(paste0('claculating PGS of ',anc, ' using chr ', chr))
   ######next step is generating some risk score using reference genotype
   ######we can download these genotype from 1000 Genome Project
@@ -22,10 +31,14 @@ PGS_bychr_bootstrap <- function(chr, anc, beta, work.dir){
   snp <- rownames(beta)[chr_loc == chr]
   
   ####load genotype data without label
-  
-  system.time(gnt<-read.plink(bed=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bed"),
-                              bim=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bim"),
-                              fam=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".fam"),
+  genotype_prefix <- genotype_prefix_list[[chr]][[anc]]
+  # system.time(gnt<-read.plink(bed=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bed"),
+  #                             bim=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bim"),
+  #                             fam=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".fam"),
+  #                             select.snps = snp)
+  system.time(gnt<-read.plink(bed=paste0(genotype_prefix, ".bed"),
+                              bim=paste0(genotype_prefix, ".bim"),
+                              fam=paste0(genotype_prefix, ".fam"),
                               select.snps = snp)
   )
   #example : "/raid6/Tianyu/PRS/bert_sample/YRI.TUNE/CHR/YRI.TUNE-chr20.bed"
@@ -48,19 +61,56 @@ PGS_bychr_bootstrap <- function(chr, anc, beta, work.dir){
   return(re.pgs)
 }
 
-#### load the parameter information
-load(paste0("Work/Sim-",i.sim,"/simulation-params.RData"))
-main.dir=params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
-work.dir=params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
+
+#####
+
+source("general_pipeline_parameters.R")
+print('the directory of the main pipeline is')
+print(main_simulation_pipeline_directory)
+
+print('the directory of the parameter tuning pipeline is')
+print(parameter_tuning_pipeline_directory)
+
+####
+
+# load the parameters for this simulation
+load(paste0(main_simulation_pipeline_directory, "Work/Sim-",i.sim,"/simulation-params.RData"))
+main.dir <- params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
+work.dir <- params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
+ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData/")
+lassosum_directory <- paste0(ParameterTuningDirectory, "JointLassosum/")
+
+####CREATE A LIST INDICATING GENOTYPE FILE NAME
+
+validation_genotype_file_list <- list()
+for(chr_index in 1:22){
+  
+  one_chr_genotype_file <- list()
+  
+  ####
+  
+  for(ancestry in c("CEU", "YRI")){
+    one_chr_genotype_file[[ancestry]] <- paste0(ParameterTuningDirectory, "CHR/", ancestry,"-chr", chr_index,"synthetic-val")
+  }
+  
+  ####
+  
+  validation_genotype_file_list[[chr_index]] <- one_chr_genotype_file
+}
+
+####FINISH:CREATE A LIST INDICATING GENOTYPE FILE NAME
 
 GAMMA = c(0.2, 0.5, 0.8)
+chrs <- 1:22
+
 
 ####
 # map=fread("/data3/DownLoadedData/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map",header=T,data.table=F)[,c("CHROM","ID")]
 map <- fread(paste0(main.dir, 'Data/chr1-22-qc-frq-ld.block.map'),header=T,data.table=F)[,c("CHROM","ID")]
 
 for(gamma in GAMMA){
-  lasso.file <- paste(work.dir,"JointLassoSum/JointLassosum-",sprintf("-gamma-%.2f",gamma),".Rdata",sep="")
+  lasso.file <- paste0(lassosum_directory, "JointLassosum-",
+                       sprintf("-gamma-%.2f",gamma), ".Rdata")
   
   ####now we load the beta0
   load(lasso.file)
@@ -68,40 +118,44 @@ for(gamma in GAMMA){
   shrink <- re.lasso$shrink 
   lambda <- re.lasso$lambda
   
-  
-  # > head(map)
-  # CHROM            ID
-  # 1  chr1 1:1962845:T:C
-  # 2  chr1 1:1962899:A:C
-  # 3  chr1 1:1963406:G:A
-  # 4  chr1 1:1963538:T:C
-  # 5  chr1 1:1963738:C:T
-  # 6  chr1 1:1964101:A:G
-  
+  ####
   
   CHR=gsub("chr","",map$CHROM)
-  # > head(CHR)
-  # [1] "1" "1" "1" "1" "1" "1"
-  
-  # SNP=map$ID
   SNP <- map[CHR %in% 1:22, ]$ID
-  chrs <- 1:22 
   
+  ####
   for(i.set in 1:2){
     
-    anc <- if(i.set == 1){'CEU'} else 'YRI'
+    ancestry <- if(i.set == 1){'CEU'} else 'YRI'
+    
     ####read in the testing phenotype
-    pheno <- fread(file = paste0(work.dir,anc,".TST/CHR/",anc,".TST-chr22.fam"))
+    # pheno <- fread(file = paste0(work.dir,anc,".TST/CHR/",anc,".TST-chr22.fam"))
+    ####
     
-    PGSnPHENO <- matrix(0, ncol = length(lambda) + 1, nrow = length(pheno$V6))
-    PGSnPHENO[,length(lambda) + 1 ] <- pheno$V6
+    ValidationSampleIndexRFile <- paste0(ParameterTuningDirectory, 
+                                    ancestry, "-synthetic-validate-index.Rdata")
+    val.index <- get(load(ValidationSampleIndexRFile))
     
-    rownames(beta) <- SNP
+    ####
+    
+    SyntheticYFile <- paste0(ParameterTuningDirectory, '/',
+                             ancestry,'-SyntheticY', '.RData')
+    SyntheticY <- get(load(SyntheticYFile))
+    SyntheticY <- SyntheticY[val.index]
+    
+    ####
+    
+    PGSnPHENO <- matrix(0, ncol = length(lambda) + 1, nrow = length(SyntheticY))
+    PGSnPHENO[,length(lambda) + 1 ] <- SyntheticY
+    
+    ####
+    rownames(beta) <- SNP ##should this be here?
     
     
-    re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc, 
-                        beta = beta, work.dir = work.dir, mc.cores = 4,
-                        mc.preschedule = F)
+    re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = ancestry, 
+                        beta = beta, work.dir = work.dir, 
+                        genotype_prefix_list = validation_genotype_file_list,
+                        mc.cores = 4, mc.preschedule = F)
     
     ### sum the results
     pgs <- re.pgss[[1]] #this is the first chromosome
@@ -110,24 +164,36 @@ for(gamma in GAMMA){
     }
     PGSnPHENO[,1:length(lambda)] <- pgs
     
-    save(PGSnPHENO, file = paste0(work.dir, "JointLassoSum/JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", anc, ".TST-PGS.Rdata"))
+    PGS_file <- paste0(lassosum_directory, "JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", ancestry, "-synthetic-validation-PGS.Rdata")
+    save(PGSnPHENO, file = PGS_file)
   }
+  
   
   
   #######load the PGS score and phenotype information, then calculate ROC
   # library(data.table)
   # library(pROC)
   for(i.set in 1:2){
-    anc <- if(i.set == 1){'CEU'} else 'YRI'
+    ancestry <- if(i.set == 1){'CEU'} else 'YRI'
+    print(ancestry)
+    ####
     
-    PGSnPHENO <- get(load(paste0(work.dir, "JointLassoSum/JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", anc, ".TST-PGS.Rdata")))
-    print(anc)
+    PGS_file <- paste0(lassosum_directory, "JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", ancestry, "-synthetic-validation-PGS.Rdata")
+    PGSnPHENO <- get(load(PGS_file))
+    
+    ####
+    
     nlambda <- NCOL(PGSnPHENO) - 1
     aucs <- rep(0, nlambda)
     ###AUC for each lambda
     for(i in 1:nlambda){
       aucs[i] <- auc(PGSnPHENO[, nlambda + 1], PGSnPHENO[,i])
     }
-    save(aucs, file = paste0(work.dir, "JointLassoSum/JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", anc, ".TST-AUC.Rdata"))
+    save(aucs, file = paste0(lassosum_directory, "/JointLassosum-",sprintf("-gamma-%.2f",gamma),"-", ancestry, "-synthetic-validation-AUC.Rdata"))
   }
 }
+
+
+
+
+
