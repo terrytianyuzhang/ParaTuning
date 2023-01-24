@@ -28,7 +28,7 @@ original_testing_result <- list()
 best_and_tuned_auc <- list()
 
 
-for(simulation_index in as.character(800:802)){
+for(simulation_index in as.character(800:806)){
   
   jointlassosum_parameter_tuning_directory <- paste0(main_simulation_pipeline_directory, "Work/Sim-",
                                                       simulation_index, "/ParameterTuningData/JointLassosum/")

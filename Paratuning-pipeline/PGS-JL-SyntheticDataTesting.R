@@ -32,10 +32,6 @@ PGS_bychr_bootstrap <- function(chr, anc, beta, work.dir, genotype_prefix_list){
   
   ####load genotype data without label
   genotype_prefix <- genotype_prefix_list[[chr]][[anc]]
-  # system.time(gnt<-read.plink(bed=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bed"),
-  #                             bim=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".bim"),
-  #                             fam=paste0(work.dir, anc,".TST/CHR/",anc,".TST-chr",chr,".fam"),
-  #                             select.snps = snp)
   system.time(gnt<-read.plink(bed=paste0(genotype_prefix, ".bed"),
                               bim=paste0(genotype_prefix, ".bim"),
                               fam=paste0(genotype_prefix, ".fam"),
@@ -129,8 +125,6 @@ for(gamma in GAMMA){
     ancestry <- if(i.set == 1){'CEU'} else 'YRI'
     
     ####read in the testing phenotype
-    # pheno <- fread(file = paste0(work.dir,anc,".TST/CHR/",anc,".TST-chr22.fam"))
-    ####
     
     ValidationSampleIndexRFile <- paste0(ParameterTuningDirectory, 
                                     ancestry, "-synthetic-validate-index.Rdata")
@@ -171,8 +165,6 @@ for(gamma in GAMMA){
   
   
   #######load the PGS score and phenotype information, then calculate ROC
-  # library(data.table)
-  # library(pROC)
   for(i.set in 1:2){
     ancestry <- if(i.set == 1){'CEU'} else 'YRI'
     print(ancestry)

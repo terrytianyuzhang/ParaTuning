@@ -1,7 +1,5 @@
 ###########generate boostrap samples and split them into training and validation######
 
-# print('generate bootstrap data for cv')
-# rm(list=ls()); 
 gc()
 options(stringsAsFactors = F)
 
@@ -28,9 +26,6 @@ print(main_simulation_pipeline_directory)
 print('the directory of the parameter tuning pipeline is')
 print(parameter_tuning_pipeline_directory)
 
-
-# setting.title <- 'CEU0aYRI0a22Chr_lambda5'
-# print(setting.title)
 chrs <- 1:22 #which chromosome did i use when training the model
 
 TrainTestNFold <- 5
@@ -47,8 +42,6 @@ ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData")
 dir.create(ParameterTuningDirectory,
            showWarnings = F,recursive = T)
 ##########read in lasso results##########
-# lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_", setting.title,".Rdata")
-# lasso.file <- paste0("/raid6/Tianyu/PRS/CombinedLassoSum/Tmp/GWAS-lasso-C20000-Y4000-gamma-0.50_CEU1aYRI2a22Chr.Rdata")
 TrainJLFile <- paste0(work.dir, 
                       'JointLassoSum/JointLassosum--gamma-', 
                       sprintf("%.2f",gammaGenerateData), 
@@ -56,15 +49,11 @@ TrainJLFile <- paste0(work.dir,
 TrainJLResult <- get(load(TrainJLFile))
 AllBeta <- TrainJLResult$beta
 
-# beta0.index <- 5 #this is for CEU1aYRI2a22Chr_lambda2
 betaGenerateData <- AllBeta[, lambdaIndexGenerateData] #use a small lambda to generate bootstrap data
 ##########read in genotype and calculate score#############
-# map <- fread('/raid6/Ron/prs/data/bert_sample/GWAS-Populations-SimulationInput/chr1-22-qc-frq-ld.block.map',header=T,data.table=F)[,c("CHROM","ID")]
 map <- fread(paste0(main.dir,
                     'Data/chr1-22-qc-frq-ld.block.map'))
 CHR <- gsub("chr","",map$CHROM)
-####!!!!!!!!!!
-# SNP <- map[CHR %in% 1:22, ]$ID
 SNP <- map$ID
 names(betaGenerateData) <- SNP
 
@@ -99,7 +88,6 @@ ancs <- c('CEU', 'YRI')
 CEUSampleSize <- params$CEU.TRN$n.case + params$CEU.TRN$n.control
 YRISampleSize <- params$YRI.TRN$n.case + params$YRI.TRN$n.control
 
-# s.sizes <- c(20000, 4000)
 s.sizes <- c(CEUSampleSize, YRISampleSize)
 caseProportion <- params$CEU.TRN$n.case / CEUSampleSize ###the case proportion is the same for both populations
 
@@ -124,9 +112,6 @@ print('generated booty')
 ###### 1/(nfold) left out for validation ####
 ##########split training and validation########
 set.seed(2019)
-# chrs <- 15
-# ancs <- c('CEU', 'YRI')
-# s.sizes <- c(20000, 4000)
 
 for(i.set in 1:2){
   anc <- ancs[i.set]
@@ -138,23 +123,14 @@ for(i.set in 1:2){
     file.title <- 'YRI-4K'
   }
   
-  # 
-  # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-  # boost.data.train.index.R <- paste0(boost.data.folder, "/boost-train-index.RData")
-  # boost.data.val.index.R <- paste0(boost.data.folder, "/boost-val-index.RData")
   TrainSampleIndexFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.txt")
   ValidationSampleIndexFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-validate-index.txt")
   TrainSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.Rdata")
   ValidationSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-validate-index.Rdata")
   
-  # boost.data.train.index.R <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.RData")
-  # boost.data.val.index.R <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-validate-index.RData")
-  # 
   val.index <- sort(sample(1:s.size, floor(s.size/TrainTestNFold)))
   train.index <- (1:s.size)[-val.index] #this is in order
   
-  # save(train.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/",setting.title,"train_index.RData"))
-  # save(val.index, file = paste0("/raid6/Tianyu/PRS/BootData/",anc,".TUNE/", setting.title,"val_index.RData"))
   save(val.index, file = ValidationSampleIndexRFile)
   save(train.index, file = TrainSampleIndexRFile)
   
@@ -165,15 +141,6 @@ for(i.set in 1:2){
   fwrite(train_psam, TrainSampleIndexFile, col.names = F, sep = " ")
   val_psam <- all_sample_psam[val.index, c(1,2)]
   fwrite(val_psam, ValidationSampleIndexFile, col.names = F, sep = " ")
-  
-  ##split all the SNPs
-  # splitTrainValidation(chr = NULL, 
-  #                      anc = anc,
-  #                      train.index = train.index, val.index = val.index,
-  #                      ParameterTuningDirectory = ParameterTuningDirectory,
-  #                      TrainSampleIndexFile = TrainSampleIndexFile,
-  #                      ValidationSampleIndexFile = ValidationSampleIndexFile,
-  #                      plink = plink)
   
   ####generate training and testing .fam files
   mclapply(chrs, splitTrainValidation, anc = anc,
@@ -264,58 +231,4 @@ for(population_index in 1:2){
          sep = ' ')
   
 }
-
-
-
-
-# ######SECTION 4: calculate pairwise gene/simulated Y association####
-# #########created simulated summary statistics########
-# ######
-# # chrs <- 1:22
-# # ancs <- c('CEU', 'YRI')
-# # chrs <- 1:6
-# for(i.set in 1:2){
-#   anc <- ancs[i.set]
-# 
-#   if(anc == 'CEU'){
-#     file.title <- 'CEU-20K'
-#   }else{
-#     file.title <- 'YRI-4K'
-#   }
-# 
-#   # boost.data.folder <- paste0("/raid6/Tianyu/PRS/BootData/", file.title,"/CHR")
-#   # boost.data.train.index.R <- paste0(boost.data.folder, "/boost-train-index.RData")
-#   TrainSampleIndexRFile <- paste0(ParameterTuningDirectory, "/", anc, "-synthetic-train-index.Rdata")
-#   train.index <- get(load(TrainSampleIndexRFile))
-# 
-#   ####
-#   SyntheticYFile <- paste0(ParameterTuningDirectory, '/',
-#                            anc,'-SyntheticY', '.RData')
-#   SyntheticY <- get(load(SyntheticYFile))
-#   SyntheticY <- SyntheticY[train.index] #only keep the training samples' Y
-#   SyntheticY <- matrix(SyntheticY, ncol = 1)
-#   SyntheticY <- SyntheticY - rep(1, nrow(SyntheticY)) %*% t(colMeans(SyntheticY))
-#   SyntheticY <- normalize.cols(SyntheticY, method="euclidean",p=2)
-# 
-#   ######
-#   SyntheticGWAS <- mclapply(chrs, PairwiseCorrelationSyntheticData,
-#                             ParameterTuningDirectory = ParameterTuningDirectory,
-#                             anc = anc,SyntheticY = SyntheticY,
-#                             mc.cores = 1, mc.preschedule = FALSE, mc.silent=F)
-# 
-#   for(ChromosomeIndex in 1:length(chrs)){
-#     if(ChromosomeIndex == 1){
-#       SyntheticGWASCombined <- SyntheticGWAS[[ChromosomeIndex]]
-#     }else{
-#       SyntheticGWASCombined <- rbind(SyntheticGWASCombined, SyntheticGWAS[[ChromosomeIndex]])
-#     }
-#   }
-# 
-#   write.table(SyntheticGWASCombined,
-#          file = paste0(ParameterTuningDirectory,'/', anc,'-SyntheticGWAS'))
-# 
-# }
-# 
-# print('pairwise association calculation')
-
 
