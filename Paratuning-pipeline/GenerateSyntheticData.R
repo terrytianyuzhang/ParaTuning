@@ -26,19 +26,14 @@ print(main_simulation_pipeline_directory)
 print('the directory of the parameter tuning pipeline is')
 print(parameter_tuning_pipeline_directory)
 
-chrs <- 1:22 #which chromosome did i use when training the model
-
-TrainTestNFold <- 5
-
-gammaGenerateData <- 0.8
-lambdaIndexGenerateData <- 5
-
 # load the parameters for this simulation
 load(paste0(main_simulation_pipeline_directory, "Work/Sim-",i.sim,"/simulation-params.RData"))
 main.dir <- params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
 work.dir <- params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
 
-ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData")
+ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData",
+                                   "_gamma_", sprintf("%.2f",gammaGenerateData), 
+                                   "_lambda_", sprintf("%.4f",lambda[lambdaIndexGenerateData]))
 dir.create(ParameterTuningDirectory,
            showWarnings = F,recursive = T)
 ##########read in lasso results##########
@@ -76,13 +71,13 @@ for(i.set in 1:2){
 ### save risk scores for each population
 
 save(risk.score.list, file = paste0(ParameterTuningDirectory,
-                                    'riskscore.Rdata'))
+                                    '/riskscore.Rdata'))
 # ###pgs is the risk score for each subject in the reference panel
 #
 
 ######SECTION 2: generate simulated Y####
 risk.score.list <- get(load(paste0(ParameterTuningDirectory,
-                                   'riskscore.Rdata')))
+                                   '/riskscore.Rdata')))
 #####we need to read figure out what is the original data noise level
 ancs <- c('CEU', 'YRI')
 CEUSampleSize <- params$CEU.TRN$n.case + params$CEU.TRN$n.control

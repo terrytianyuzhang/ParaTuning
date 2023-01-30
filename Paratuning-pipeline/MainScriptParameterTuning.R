@@ -7,7 +7,7 @@ options(stringsAsFactors = F)
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"
 # sims=800:809
-sims <- 803:809 ##only consider one replicate
+sims <- 801:809 ##only consider one replicate
 
 # for(i.sim in sims){
 #   seed=sample(1e6,1)
@@ -51,11 +51,11 @@ sims <- 803:809 ##only consider one replicate
 #   source("PGS-JointLassosum-testing.R")
 # }
 # 
-# # generate synthetic data for parameter tuning
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("GenerateSyntheticData.R")
-# }
+# generate synthetic data for parameter tuning
+for(i.sim in sims){
+  print(i.sim)
+  source("GenerateSyntheticData.R")
+}
 
 # fit joint lassosum with synthetic data
 for(i.sim in sims){

@@ -149,7 +149,9 @@ print(parameter_tuning_pipeline_directory)
 load(paste0(main_simulation_pipeline_directory, "Work/Sim-",i.sim,"/simulation-params.RData"))
 main.dir <- params$run.info$main.dir #"/raid6/Tianyu/PRS/SimulationPipeline/"
 work.dir <- params$run.info$work.dir #"/raid6/Tianyu/PRS/SimulationPipeline/Work/Sim-800/"
-ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData/")
+ParameterTuningDirectory <- paste0(work.dir, "/ParameterTuningData",
+                                   "_gamma_", sprintf("%.2f",gammaGenerateData), 
+                                   "_lambda_", sprintf("%.4f",lambda[lambdaIndexGenerateData]), "/")
 ##
 
 GWAS_file <- list(CEU = paste0(ParameterTuningDirectory, 
@@ -161,16 +163,6 @@ output_directory <- paste0(ParameterTuningDirectory, "JointLassosum/")
 ### ancestries
 gwasANC <- c("CEU","YRI")
 #### set the parameters
-
-GAMMA <- c(0.2, 0.5, 0.8)
-lambda <- exp(seq(log(0.0025), log(0.025), length.out=10))
-shrink <- .9
-
-##
-
-chrs <- 1:22 #which chromosome did i use when training the model
-
-#######
 
 ####sample sizes
 N1 <- params$CEU.TRN$n.case + params$CEU.TRN$n.control

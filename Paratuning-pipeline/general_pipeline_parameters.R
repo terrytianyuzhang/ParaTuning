@@ -24,3 +24,17 @@ sample_sizes[["YRI"]]=data.frame(n.case=2000,n.control=2000)
 GAMMA = c(0.2, 0.5, 0.8)
 lambda=exp(seq(log(0.0025), log(0.025), length.out=10)) 
 shrink=.9
+
+####parameters used when generating the synthetic data
+chrs <- 1:22
+TrainTestNFold <- 5
+# the first setting
+# gammaGenerateData <- 0.8
+# lambdaIndexGenerateData <- 5
+# the second setting
+# gammaGenerateData <- 0.5
+# lambdaIndexGenerateData <- 5
+
+# the third setting
+gammaGenerateData <- 0.2
+lambdaIndexGenerateData <- 8

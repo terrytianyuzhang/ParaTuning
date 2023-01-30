@@ -18,6 +18,11 @@ print(lambda)
 
 ####
 
+####
+
+# gammaGenerateData <- 0.5
+# lambdaIndexGenerateData <- 5
+
 ancestries <- c("CEU", "YRI")
 
 ####
@@ -28,10 +33,13 @@ original_testing_result <- list()
 best_and_tuned_auc <- list()
 
 
-for(simulation_index in as.character(800:806)){
+for(simulation_index in as.character(800:809)){
   
   jointlassosum_parameter_tuning_directory <- paste0(main_simulation_pipeline_directory, "Work/Sim-",
-                                                      simulation_index, "/ParameterTuningData/JointLassosum/")
+                                                      simulation_index, "/ParameterTuningData",
+                                                     "_gamma_", sprintf("%.2f",gammaGenerateData), 
+                                                     "_lambda_", sprintf("%.4f",lambda[lambdaIndexGenerateData]),
+                                                     "/JointLassosum/")
   
   ####load the synthetic data tuning AUC
   
@@ -96,8 +104,37 @@ for(simulation_index in as.character(800:806)){
   ####best AUC versus the selected AUC
   
   best_and_tuned_auc_one_setting <- data.frame()
+  
   for(ancestry in ancestries){
-    best_tuned_parameter_index <- which.max(parameter_tuning_result[[simulation_index]][[ancestry]])
+    
+    determine_best_parameter <- function(testing_auc_table,
+                                         rule = "99%"){
+      
+      number_candidate_gamma <- nrow(testing_auc_table)
+
+      favorable_auc_each_gamma <- rep(NA, number_candidate_gamma)
+      
+      for(gamma_index in 1:number_candidate_gamma){
+        
+        auc_for_one_gamme <- unlist(testing_auc_table[gamma_index,])
+        
+        best_auc <- max(auc_for_one_gamme)
+        favorable_auc <- 0.99 * best_auc
+        
+        favorable_lambda_index <- which(auc_for_one_gamme >= favorable_auc)
+        favorable_lambda_index_most_regularized <- max(favorable_lambda_index)
+        
+        favorable_auc_each_gamma[gamma_index] <- auc_for_one_gamme[favorable_lambda_index_most_regularized]
+      }
+      
+      favorable_auc <- max(favorable_auc_each_gamma)
+      
+      favorable_combination_index <- which(testing_auc_table == favorable_auc)
+      
+      return(favorable_combination_index)
+    }
+    
+    best_tuned_parameter_index <- determine_best_parameter(parameter_tuning_result[[simulation_index]][[ancestry]])
     best_parameter_index <- which.max(original_testing_result[[simulation_index]][[ancestry]])
     best_and_tuned_auc_one_setting_one_ancestry <- data.frame(ancestry = ancestry,
                                                               oracle_auc = as.numeric(original_testing_result[[simulation_index]][[ancestry]][best_parameter_index]),
@@ -110,3 +147,34 @@ for(simulation_index in as.character(800:806)){
   ####FINISH: best AUC versus the selected AUC
 
 }
+
+#########SAVE THE RESULTS
+
+parameter_tuning_result_directory <- paste0(parameter_tuning_pipeline_directory,
+                                            'Data/')
+dir.create(parameter_tuning_result_directory,
+           showWarnings = F,recursive = T)
+
+#####
+
+parameter_tuning_result_file <- paste0(parameter_tuning_result_directory, "synthetic_data_tuning_auc",
+                                       "_gamma_", sprintf("%.2f",gammaGenerateData), 
+                                       "_lambda_", sprintf("%.4f",lambda[lambdaIndexGenerateData]),
+                                       ".RData")
+
+save(best_and_tuned_auc, file = parameter_tuning_result_file)
+
+
+##
+
+parameter_tuning_result_complete_file <- paste0(parameter_tuning_result_directory, "synthetic_data_tuning_auc_complete",
+                                                "_gamma_", sprintf("%.2f",gammaGenerateData), 
+                                                "_lambda_", sprintf("%.4f",lambda[lambdaIndexGenerateData]),
+                                                ".RData")
+
+save(parameter_tuning_result, file = parameter_tuning_result_complete_file)
+#########FINISH:SAVE THE RESULTS
+
+
+
+
