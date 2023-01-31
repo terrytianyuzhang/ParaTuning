@@ -36,5 +36,10 @@ TrainTestNFold <- 5
 # lambdaIndexGenerateData <- 5
 
 # the third setting
-gammaGenerateData <- 0.2
-lambdaIndexGenerateData <- 8
+# gammaGenerateData <- 0.2
+# lambdaIndexGenerateData <- 8
+
+# the forth setting
+gammaGenerateData <- 0.8
+lambdaIndexGenerateData <- 1
+
