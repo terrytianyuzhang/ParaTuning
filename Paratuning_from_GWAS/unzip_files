@@ -1,0 +1,10 @@
+# #!/bin/bash
+# for file in *.gz; do
+#   gunzip "$file"
+# done
+
+#!/bin/bash
+shopt -s globstar nullglob
+for file in **/**/*.gz; do
+  gunzip "$file"
+done

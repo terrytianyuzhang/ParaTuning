@@ -74,7 +74,7 @@ for(simulation_setting in 1:length(simulation_index_sets)){
     }
     
     FDR_by_threshold[, FDR:= 1 - true_positive/total_positive]
-    FDR_by_threshold[, method:= 'JLssum']
+    FDR_by_threshold[, method:= 'JLsum(Y&C)']
     
     #####
     
@@ -95,7 +95,7 @@ for(simulation_setting in 1:length(simulation_index_sets)){
     }
     
     FDR_by_threshold[, FDR:= 1-true_positive/total_positive]
-    FDR_by_threshold[, method:= 'LS-CEU-train']
+    FDR_by_threshold[, method:= 'Lsum(CEU)']
     
     #####
     
@@ -116,7 +116,7 @@ for(simulation_setting in 1:length(simulation_index_sets)){
     }
   
     FDR_by_threshold[, FDR:= 1-true_positive/total_positive]
-    FDR_by_threshold[, method:= 'LS-YRI-train']
+    FDR_by_threshold[, method:= 'Lsum(YRI)']
   
     #####
   
@@ -134,33 +134,33 @@ for(simulation_setting in 1:length(simulation_index_sets)){
                                                     mean_true_positive = mean(true_positive)),
                                                 by = .(population, threshold, method)]
   FDR_average_simulation[, mean_false_positive := mean_total_positive - mean_true_positive]
+  FDR_average_simulation[, plot_legend := as.factor(paste0(population,'-',method))]
+  
+  
   #####
-  ggplot()+
+  
+  break_names <- c("CEU-Lsum(YRI)","YRI-Lsum(YRI)", "YRI-Lsum(CEU)",
+                   "YRI-JLsum(Y&C)","CEU-Lsum(CEU)","CEU-JLsum(Y&C)")
+  ggplot( data = FDR_average_simulation[plot_legend != 'CEU-Lsum(YRI)', ])+
     geom_line(aes(x = threshold, y = mean_FDR, 
-                  group = as.factor(paste0(population,'-',method)), 
-                  color = as.factor(paste0(population,'-',method))),
-              data = FDR_average_simulation)+
+                  group = plot_legend, 
+                  color = plot_legend))+
     geom_point(aes(x = threshold, y = mean_FDR, 
-                  group = as.factor(paste0(population,'-',method)), 
-                  shape = as.factor(paste0(population,'-',method)),
-                  color = as.factor(paste0(population,'-',method))),
-               # show.legend = FALSE,
-               data = FDR_average_simulation)+
-    # geom_line(aes(x = threshold, y = total_positive,
-    #               group = as.factor(paste0(population,'-',method)),
-    #               color = as.factor(paste0(population,'-',method))),
-    #           data = FDR_all_method)+
+                  group = plot_legend, 
+                  shape = plot_legend,
+                  color = plot_legend))+
     theme_bw()+
     # theme(legend.position = 'bottom')+
     xlim(c(-2.5, 2.5))+
-    xlab('PGS threshold')+
+    xlab('PRS threshold')+
     ylab('FDR')+
     scale_color_manual(name=" ",
-                       values=c("#d72631", "#a2d5c6", 
-                                "#077b8a", "#5c3c92",
-                                "#070601", "#C2C5C6"))+
+                       values=c("#a2d5c6", "#077b8a", "#5c3c92",
+                                "#d72631","#070601", "#C2C5C6"),
+                       breaks = break_names)+
     scale_shape_manual(name=" ",
-                       values = 1:6)
+                       values = 1:6,
+                       breaks = break_names)
   
   ###
   filename_prefix <- c('6xx', '7xx', '8xx')

@@ -1,0 +1,1 @@
+Rscript MainScriptParameterTuning.R > /raid6/Tianyu/PRS/parameter_tuning_from_GWAS/MainScriptParameterTuning.txt

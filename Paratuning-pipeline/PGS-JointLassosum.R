@@ -1,24 +1,8 @@
-# rm(list=ls()); 
+
 gc()
 options(stringsAsFactors = F)
-#####I am trying to fit combined lassosum algorithm
 
-#########
-### The strategy to determine the combined lassosum is to use the architecture of the computer to determine the solutions
-### It works from the original Peng code without any modifications to increase the speed.
-### In this setting we do a grid search on 5 values of gamma and 5 for lambda
-### The code accepts multiple lambdas in pone run, but swill only use a single gamma
-### For each complete run we need to run the program, 5 times.
-### By calculating the lassosum by chromososome there is an additional level of parallelization that can be achieved.
-### After some experimentation I came to the conclusion that the quickest approach is to use 12 processors for the 22 chromosomes.
-### For this I used a memory limit per processor of 20Gb
-### This allows the smaller chromosomes to run on the same processor and be done at the same times the smaller ones.
-### A single run can then be completed in 20 minutes using 1+12 processors at a memory cost of ~260Gb. On our 2 Tb computer with 192 cores 
-### we can run 7 gammas simultaneously. I opted to use 5, to allow me some memory to do additional work.
 
-#### software needed
-# plink="/data3/Software/Plink/plink"
-# plink2="/data3/Software/Plink2/plink2"
 if(!exists("plink") | !exists("plink2")){
   plink <- "/usr/local/bin/plink"
   plink2 <- "/usr/local/bin/plink2"
@@ -267,7 +251,7 @@ mem.limit=2*10e9
 system.time(re.wrapper<-mclapply(1:nrow(input.df),wrapperFunction,input.df=input.df,
                                  gwasANC = gwasANC, lambda=lambda, shrink=shrink,
                                  main.dir=main.dir,work.dir=work.dir,CHR= 1:22, mem.limit=2e10,
-                                 mc.cores=3,mc.preschedule = F, mc.silent=F))
+                                 mc.cores=3, mc.preschedule = F, mc.silent=F))
 #####print the above variables
 # > input.df
 # gamma    N1    N2

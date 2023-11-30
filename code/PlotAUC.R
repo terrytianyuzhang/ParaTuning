@@ -6,21 +6,21 @@ rawSimulationAUC <- get(load('simulations-Results-6xx-7xx-8xx01-13-2023.RData'))
 
 
 clean_simulation_AUC <- data.table()
-for(setting_index in 1:10){
+for(setting_index in 21:30){
   
   pnt_result <- rawSimulationAUC[[setting_index]]$pnt
   pnt_result_formated <- pnt_result[,c('TRN','TST','auc')]
   pnt_result_formated$setting <- names(rawSimulationAUC)[setting_index]
-  pnt_result_formated$method <- 'PnT'
+  pnt_result_formated$method <- 'P&T'
   
   clean_simulation_AUC <- rbind(clean_simulation_AUC, 
                                 pnt_result_formated)
   
   wpnt_result <- rawSimulationAUC[[setting_index]]$wpnt
   wpnt_result_formated <- wpnt_result[,c('TST','auc')]
-  wpnt_result_formated$TRN <- 'Both'
+  wpnt_result_formated$TRN <- 'Y&C'
   wpnt_result_formated$setting <- names(rawSimulationAUC)[setting_index]
-  wpnt_result_formated$method <- 'PnT-wt'
+  wpnt_result_formated$method <- 'P&T-wt'
   
   clean_simulation_AUC <- rbind(clean_simulation_AUC, 
                                 wpnt_result_formated)
@@ -28,32 +28,32 @@ for(setting_index in 1:10){
   ls_result <- rawSimulationAUC[[setting_index]]$ls
   ls_result_formated <- ls_result[,c('TRN','TST','auc')]
   ls_result_formated$setting <- names(rawSimulationAUC)[setting_index]
-  ls_result_formated$method <- 'LS'
+  ls_result_formated$method <- 'Lsum'
   
   clean_simulation_AUC <- rbind(clean_simulation_AUC, 
                                 ls_result_formated)
   
   wls_result <- rawSimulationAUC[[setting_index]]$wls
   wls_result_formated <- wls_result[,c('TST','auc')]
-  wls_result_formated$TRN <- 'Both'
+  wls_result_formated$TRN <- 'Y&C'
   wls_result_formated$setting <- names(rawSimulationAUC)[setting_index]
-  wls_result_formated$method <- 'LS-wt'
+  wls_result_formated$method <- 'Lsum-wt'
   
   clean_simulation_AUC <- rbind(clean_simulation_AUC, 
                                 wls_result_formated)
   
   jls_result <- rawSimulationAUC[[setting_index]]$jls
   jls_result_formated <- jls_result[,c('TST','auc')]
-  jls_result_formated$TRN <- 'Both'
+  jls_result_formated$TRN <- 'Y&C'
   jls_result_formated$setting <- names(rawSimulationAUC)[setting_index]
-  jls_result_formated$method <- 'JLS'
+  jls_result_formated$method <- 'JLsum'
   
   clean_simulation_AUC <- rbind(clean_simulation_AUC, 
                                 jls_result_formated)
   
   tl_result <- rawSimulationAUC[[setting_index]]$tl
   tl_result_formated <- tl_result[,c('TST','auc')]
-  tl_result_formated$TRN <- 'Both'
+  tl_result_formated$TRN <- 'Y&C'
   tl_result_formated$setting <- names(rawSimulationAUC)[setting_index]
   tl_result_formated$method <- 'TL'
   
@@ -65,15 +65,17 @@ for(setting_index in 1:10){
 }
 
 clean_simulation_AUC[, method := factor(method,
-                                        levels = c("JLS", "TL", "LS-wt", "PnT-wt", "LS", "PnT"))]
+                                        levels = c("JLsum", "TL", "Lsum-wt", "P&T-wt", "Lsum", "P&T"))]
 clean_simulation_AUC[, method_TRN := factor(paste0(method,'(',TRN,')'),
-                     levels = c("JLS(Both)", "TL(Both)", "LS-wt(Both)", "PnT-wt(Both)", 
-                                "LS(CEU)", "PnT(CEU)", "LS(YRI)", "PnT(YRI)"))]
-
+                     levels = c("JLsum(Y&C)", "TL(Y&C)", "Lsum-wt(Y&C)", "P&T-wt(Y&C)", 
+                                "Lsum(CEU)", "P&T(CEU)", "Lsum(YRI)", "P&T(YRI)"))]
+clean_simulation_AUC[, method_TRN := factor(method_TRN, 
+                                            levels = rev(c("JLsum(Y&C)", "TL(Y&C)", "Lsum-wt(Y&C)", "P&T-wt(Y&C)", 
+                                                           "Lsum(CEU)", "P&T(CEU)", "Lsum(YRI)", "P&T(YRI)")))]
 ##########violin plots#####
 library(ggplot2)
 library(ggpubr)
-mainYRI <- ggplot(clean_simulation_AUC[TST == 'YRI',]) +
+mainYRI <- ggplot(clean_simulation_AUC[TST == 'YRI' & method_TRN != "P&T-wt(Y&C)",]) +
   geom_violin(aes(x=method_TRN, y=auc, fill = method_TRN),
               trim=T, alpha = 0.4)+
   geom_point(aes(x=method_TRN, y=auc,
@@ -84,11 +86,13 @@ mainYRI <- ggplot(clean_simulation_AUC[TST == 'YRI',]) +
                              "#d64e12","#B6BeB2"))+
   scale_color_manual(values=c("#9b5fe0", "#16a4d8", "#60dbe8",
   "#8bd346", "#efdf48","#f9a52c","#d64e12","#B6BeB2"))+
-  ylim(c(0.5,0.9))+
+  ylim(c(0.6,0.8))+
   # xlab("Method")+
   xlab(NULL)+
-  ylab("YRI tst. AUC")+
-  theme_bw()
+  ylab("YRI TST. AUC")+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
   # theme(axis.text.x=element_blank())
 
 mainCEU <- ggplot(clean_simulation_AUC[TST == 'CEU',]) +
@@ -105,8 +109,8 @@ mainCEU <- ggplot(clean_simulation_AUC[TST == 'CEU',]) +
                               "#60dbe8", "#8bd346", "#efdf48","#f9a52c","#d64e12","#B6BeB2"))+
   ylim(c(0.5,0.9))+
   xlab("Method")+
-  ylab("CEU tst. AUC")+
-  theme_bw()
+  ylab("CEU TST. AUC")+
+  theme_light()
 
 
 
@@ -115,13 +119,14 @@ mainCEU <- ggplot(clean_simulation_AUC[TST == 'CEU',]) +
 #        height = 5,
 #        units = "cm")
 mainCombined<- ggarrange(
-  mainYRI,mainCEU,  
-  nrow = 2,
+  mainYRI,
+  # mainCEU,  
+  nrow = 1,
   # labels = c("A","B"),
   common.legend = TRUE,legend = 'none'
 ) 
 mainCombined
-ggsave(filename = "Sim6xx-testing-AUC.pdf",
+ggsave(filename = "Sim8xx-testing-AUC.pdf",
        device = "pdf",
        width = 180, height = 90, units = "mm")
 
@@ -195,7 +200,7 @@ ggsave(filename = "Sim6xx-testing-AUC.pdf",
 # results$AUC <- results$AUC + rnorm(NROW(results), 0, 0.01)
 # ggplot(results[results$test.population == 'YRI',]) +
 #   geom_violin(aes(x=method, y=AUC, fill = as.factor(method)),
-#               trim=FALSE)+
+#               trim=FALsumE)+
 #   scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9",
 #                              "#F6B419", "#56B419"))+
 #   theme_bw()

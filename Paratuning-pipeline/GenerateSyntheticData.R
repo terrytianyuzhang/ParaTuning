@@ -58,7 +58,7 @@ ancs <- c('CEU', 'YRI')
 for(i.set in 1:2){
   anc <- ancs[i.set]
   re.pgss <- mclapply(chrs, PGS_bychr_bootstrap, anc = anc,
-                      beta0 = betaGenerateData, mc.cores = 16, mc.preschedule = FALSE)
+                      beta0 = betaGenerateData, mc.cores = 8, mc.preschedule = FALSE)
   ### sum the results
   pgs <- re.pgss[[1]] #this is the first chromosome
   for(i in 2:length(re.pgss)){

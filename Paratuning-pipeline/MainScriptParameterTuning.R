@@ -7,7 +7,7 @@ options(stringsAsFactors = F)
 plink <- "/usr/local/bin/plink"
 plink2 <- "/usr/local/bin/plink2"
 # sims=800:809
-sims <- 801:809 ##only consider one replicate
+sims <- 800:803 ##only consider one replicate
 
 # for(i.sim in sims){
 #   seed=sample(1e6,1)
@@ -39,32 +39,32 @@ sims <- 801:809 ##only consider one replicate
 #   source("run-gwas.R")
 # }
 
-# # fit joint lassosum with real data
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-JointLassosum.R")
-# }
-# 
-# # # get testing AUC of Joint Lassosum
-# for(i.sim in sims){
-#   print(i.sim)
-#   source("PGS-JointLassosum-testing.R")
-# }
-# 
-# generate synthetic data for parameter tuning
+# fit joint lassosum with real data
 for(i.sim in sims){
   print(i.sim)
-  source("GenerateSyntheticData.R")
+  source("PGS-JointLassosum.R")
 }
 
-# fit joint lassosum with synthetic data
+# # get testing AUC of Joint Lassosum
 for(i.sim in sims){
   print(i.sim)
-  source("PGS-JL-SyntheticDataTraining.R")
+  source("PGS-JointLassosum-testing.R")
 }
 # 
-# get testing AUC of Joint Lassosum, trained with synthetic data
-for(i.sim in sims){
-  print(i.sim)
-  source("PGS-JL-SyntheticDataTesting.R")
-}
+# # generate synthetic data for parameter tuning
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("GenerateSyntheticData.R")
+# }
+# 
+# # fit joint lassosum with synthetic data
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("PGS-JL-SyntheticDataTraining.R")
+# }
+# # 
+# # get testing AUC of Joint Lassosum, trained with synthetic data
+# for(i.sim in sims){
+#   print(i.sim)
+#   source("PGS-JL-SyntheticDataTesting.R")
+# }
